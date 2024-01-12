@@ -99,7 +99,7 @@ abstract class HookEntrance<T : HookStart> : IXposedHookLoadPackage, IXposedHook
             }
 
             // filter process name
-            if (scope.processName.isNullOrEmpty() && scope.processName != lp.processName) {
+            if (!scope.processName.isNullOrEmpty() && scope.processName != lp.processName) {
                 return@forEach
             }
 
