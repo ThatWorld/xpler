@@ -8,7 +8,6 @@ import io.github.xpler.core.KtXposedHelpers
 import io.github.xpler.core.getStaticObjectField
 import io.github.xpler.core.hookClass
 import io.github.xpler.core.log.XplerLog
-import io.github.xpler.core.lpparam
 import io.github.xpler.core.thisApplication
 import io.github.xpler.core.wrapper.ApplicationHookStart
 import io.github.xpler.core.wrapper.DefaultHookStart
@@ -27,7 +26,7 @@ abstract class HookEntrance<T : HookStart> : IXposedHookLoadPackage, IXposedHook
         KtXposedHelpers.initModule(sparam.modulePath)
     }
 
-    override fun handleLoadPackage(lpparam: XC_LoadPackage.LoadPackageParam) {
+    override fun handleLoadPackage(lp: XC_LoadPackage.LoadPackageParam) {
         // default output of logs to xposed
         XplerLog.isXposed(true)
 
@@ -36,29 +35,26 @@ abstract class HookEntrance<T : HookStart> : IXposedHookLoadPackage, IXposedHook
             return
         }
 
-        // set global lpparam
-        KtXposedHelpers.setLpparam(lpparam)
-
         // create
         val newInstance = hookStart.getConstructor().newInstance() as HookStart
 
         // init module status
-        if (lpparam.packageName == newInstance.modulePackage) {
-            initModule(lpparam)
+        if (lp.packageName == newInstance.modulePackage) {
+            initModule(lp)
             return
         }
 
         // hook entrance
         when (newInstance) {
-            is ApplicationHookStart -> applicationHookStart(newInstance)
-            is DefaultHookStart -> defaultHookStart(newInstance)
+            is ApplicationHookStart -> applicationHookStart(lp, newInstance)
+            is DefaultHookStart -> defaultHookStart(lp, newInstance)
             else -> XplerLog.i("no hook entrance!!")
         }
     }
 
     // module status hook!!
-    private fun initModule(lpparam: XC_LoadPackage.LoadPackageParam) {
-        lpparam.hookClass(HookState::class.java)
+    private fun initModule(lp: XC_LoadPackage.LoadPackageParam) {
+        lp.hookClass(HookState::class.java)
             .method("isEnabled") {
                 onAfter {
                     result = true
@@ -86,44 +82,52 @@ abstract class HookEntrance<T : HookStart> : IXposedHookLoadPackage, IXposedHook
     }
 
     // ApplicationHookStart
-    private fun applicationHookStart(start: ApplicationHookStart) {
+    private fun applicationHookStart(lp: XC_LoadPackage.LoadPackageParam, start: ApplicationHookStart) {
         val scopes = start.scopes
         val scopePackageNames = scopes.map { it.packageName }
 
         // compare package name
-        if (!scopePackageNames.contains(lpparam.packageName)) {
+        if (!scopePackageNames.contains(lp.packageName)) {
             return
         }
 
         // host application
         scopes.forEach { scope ->
-            if (scope.packageName != lpparam.packageName) {
+            // filter package name
+            if (scope.packageName != lp.packageName) {
                 return@forEach
             }
 
-            if (scope.applicationClassName.trim().isEmpty()) {
+            // filter process name
+            if (scope.processName.isNullOrEmpty() && scope.processName != lp.processName) {
+                return@forEach
+            }
+
+            if (scope.applicationClassName.isEmpty()) {
                 XplerLog.e(IllegalArgumentException("This scope provided application class name it's empty."))
                 return@forEach
             }
 
-            lpparam.hookClass(scope.applicationClassName)
+            lp.hookClass(scope.applicationClassName)
                 .method("onCreate") {
                     onBefore {
+                        KtXposedHelpers.setLpparam(lp)
                         val application = thisApplication
-                        injectClassLoader(lpparam, application.classLoader)
-                        start.onCreateBefore(lpparam, application)
+                        injectClassLoader(lp, application.classLoader)
+                        start.onCreateBefore(lp, application)
                     }
                     onAfter {
                         val application = thisApplication
-                        start.onCreateAfter(lpparam, application)
+                        start.onCreateAfter(lp, application)
                     }
                 }
         }
     }
 
     // DefaultHookStart
-    private fun defaultHookStart(start: DefaultHookStart) {
-        start.loadPackage(lpparam)
+    private fun defaultHookStart(lp: XC_LoadPackage.LoadPackageParam, start: DefaultHookStart) {
+        KtXposedHelpers.setLpparam(lp)
+        start.loadPackage(lp)
     }
 }
 

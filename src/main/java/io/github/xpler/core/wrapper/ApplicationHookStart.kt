@@ -20,7 +20,7 @@ interface ApplicationHookStart : HookStart {
      * 不要在 [onCreateBefore]、[onCreateAfter] 中书写或调用相同的Hook逻辑, 毫无意义。
      */
     fun onCreateBefore(
-        lpparam: XC_LoadPackage.LoadPackageParam,
+        lp: XC_LoadPackage.LoadPackageParam,
         hostApp: Application,
     )
 
@@ -30,16 +30,27 @@ interface ApplicationHookStart : HookStart {
      * 不要在 [onCreateBefore]、[onCreateAfter] 中书写或调用相同的Hook逻辑, 毫无意义。
      */
     fun onCreateAfter(
-        lpparam: XC_LoadPackage.LoadPackageParam,
+        lp: XC_LoadPackage.LoadPackageParam,
         hostApp: Application,
     )
 
-    //
+    /**
+     * 针对应用的Hook作用域。
+     *
+     * @param packageName 宿主包名
+     * @param applicationClassName 宿主Application
+     * @param processName 指定某个进程名，为空则对宿主所有进程生效
+     */
     data class Scope(
         val packageName: String,
         val applicationClassName: String,
+        val processName: String? = null,
     )
 }
 
 //
-infix fun String.at(b: String): ApplicationHookStart.Scope = ApplicationHookStart.Scope(this, b)
+infix fun String.at(applicationClassName: String): ApplicationHookStart.Scope =
+    ApplicationHookStart.Scope(this, applicationClassName)
+
+infix fun String.at(part: Pair<String, String>): ApplicationHookStart.Scope =
+    ApplicationHookStart.Scope(this, part.first, part.second)

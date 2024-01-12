@@ -251,6 +251,7 @@ abstract class HookEntity<T>(
      * @return List<Method>
      */
     private fun filterHookMethods(
+        value: Method,
         names: Array<out String>,
         paramTypes: Array<Class<*>?>,
         returnType: String,
@@ -277,7 +278,11 @@ abstract class HookEntity<T>(
             sequence = sequence.filter { returnType == it.returnType.name }
         }
 
-        return sequence.toList()
+        return sequence.toList().also {
+            if (it.isEmpty()) {
+                XplerLog.e(NoSuchMethodException("$value no corresponding method was matched in the target class!"))
+            }
+        }
     }
 
     /**
@@ -299,7 +304,7 @@ abstract class HookEntity<T>(
                 return@let it.name.trim()
             } ?: ""
 
-            val methods = filterHookMethods(names, paramTypes, returnType)
+            val methods = filterHookMethods(value, names, paramTypes, returnType)
 
             methods.forEach {
                 MethodHookImpl(it).apply {
@@ -338,7 +343,7 @@ abstract class HookEntity<T>(
                 return@let it.name.trim()
             } ?: ""
 
-            val methods = filterHookMethods(names, paramTypes, returnType)
+            val methods = filterHookMethods(value, names, paramTypes, returnType)
 
             methods.forEach {
                 MethodHookImpl(it).apply {
@@ -378,7 +383,7 @@ abstract class HookEntity<T>(
                 return@let it.name.trim()
             } ?: ""
 
-            val methods = filterHookMethods(names, paramTypes, returnType)
+            val methods = filterHookMethods(value, names, paramTypes, returnType)
 
             methods.forEach {
                 MethodHookImpl(it).apply {
