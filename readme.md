@@ -1,6 +1,6 @@
 # Xpler
 
----
+
 
 Xposed Kotlin 开发模板，更适合Kotlin编码风格。
 
@@ -194,7 +194,7 @@ Xposed Kotlin 开发模板，更适合Kotlin编码风格。
 - 对  `XC_LoadPackage.LoadPackageParam` 类增加的扩展：
 
   ```kotlin
-  lpparam.hookClass(SnsTimeLineUI::class.java)
+  lpparam.hookClass(Activity::class.java)
       .method("onCreate", Bundle::class.java) { ... }
       .method("onResume") { ... }
       .method("onStart") { ... }
