@@ -16,7 +16,9 @@ import io.github.xpler.loader.injectClassLoader
 import java.lang.reflect.ParameterizedType
 
 // Hook init entrance
-abstract class HookEntrance<T : HookStart> : IXposedHookLoadPackage, IXposedHookZygoteInit {
+abstract class HookEntrance<T : HookStart> :
+    IXposedHookLoadPackage, IXposedHookZygoteInit {
+
     private val hookStart by lazy {
         val type = this::class.java.genericSuperclass as ParameterizedType
         type.actualTypeArguments[0] as Class<*>
@@ -48,7 +50,6 @@ abstract class HookEntrance<T : HookStart> : IXposedHookLoadPackage, IXposedHook
         when (newInstance) {
             is ApplicationHookStart -> applicationHookStart(lp, newInstance)
             is DefaultHookStart -> defaultHookStart(lp, newInstance)
-            else -> XplerLog.i("no hook entrance!!")
         }
     }
 
@@ -82,7 +83,10 @@ abstract class HookEntrance<T : HookStart> : IXposedHookLoadPackage, IXposedHook
     }
 
     // ApplicationHookStart
-    private fun applicationHookStart(lp: XC_LoadPackage.LoadPackageParam, start: ApplicationHookStart) {
+    private fun applicationHookStart(
+        lp: XC_LoadPackage.LoadPackageParam,
+        start: ApplicationHookStart,
+    ) {
         val scopes = start.scopes
         val scopePackageNames = scopes.map { it.packageName }
 
@@ -125,7 +129,10 @@ abstract class HookEntrance<T : HookStart> : IXposedHookLoadPackage, IXposedHook
     }
 
     // DefaultHookStart
-    private fun defaultHookStart(lp: XC_LoadPackage.LoadPackageParam, start: DefaultHookStart) {
+    private fun defaultHookStart(
+        lp: XC_LoadPackage.LoadPackageParam,
+        start: DefaultHookStart,
+    ) {
         KtXposedHelpers.setLpparam(lp)
         start.loadPackage(lp)
     }

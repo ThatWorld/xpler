@@ -40,7 +40,7 @@ class XplerLog {
         if (silence) return
 
         // 最长的字符串
-        val maxReduce = msg.reduce { acc, s -> if (acc.length > s.length) acc else s }
+        val maxReduce = if (msg.isEmpty()) "        " else msg.reduce { acc, s -> if (acc.length > s.length) acc else s }
 
         // 边框构建器
         val border = if (maxReduce.length >= maxBorderSize) {

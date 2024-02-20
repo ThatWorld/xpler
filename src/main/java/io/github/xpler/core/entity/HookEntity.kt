@@ -13,9 +13,8 @@ import io.github.xpler.core.wrapper.CallConstructors
 import io.github.xpler.core.wrapper.CallMethods
 import java.lang.reflect.Method
 import java.lang.reflect.ParameterizedType
-import kotlin.reflect.KClass
 
-/// 使用案例, 详见: https://github.com/GangJust/Xpler/blob/main/docs/readme.md
+/// 使用案例, 详见: https://github.com/GangJust/xpler/blob/master/readme.md
 
 /**
  * 对于目标类某个普通方法的挂勾，等价于 [XC_MethodHook.beforeHookedMethod]。
@@ -125,7 +124,7 @@ annotation class KeepParam()
  * @param type 类型
  */
 @Target(AnnotationTarget.FUNCTION)
-annotation class ReturnType(val name: String = "", val type: KClass<*> = Class::class)
+annotation class ReturnType(val name: String = "")
 
 /**
  * 一次性的Hook注解。
@@ -221,6 +220,16 @@ abstract class HookEntity<T>(
     }
 
     /**
+     * 字节码签名转换：Landroid/view/View; -> android.view.View
+     */
+    protected fun simpleName(name: String): String {
+        if (name.startsWith('L') && name.endsWith(';') || name.contains('/'))
+            return name.removePrefix("L").removeSuffix(";").replace("/", ".")
+
+        return name
+    }
+
+    /**
      * 获取子类泛型中的Hook目标类, 如果泛型类是 Any, 则需要通过 [setTargetClass] 对指定类进行设置
      */
     private fun getHookTargetClass(): Class<*> {
@@ -270,12 +279,12 @@ abstract class HookEntity<T>(
 
         // 具有参数列表
         if (paramTypes.isNotEmpty()) {
-            sequence = sequence.filter { paramTypes.contentDeepEquals(it.parameterTypes) }
+            sequence = sequence.filter { compareParamTypes(it, paramTypes) }
         }
 
         // 具有返回值
         if (returnType.isNotEmpty()) {
-            sequence = sequence.filter { returnType == it.returnType.name }
+            sequence = sequence.filter { simpleName(returnType) == it.returnType.name }
         }
 
         return sequence.toList().also {
@@ -283,6 +292,37 @@ abstract class HookEntity<T>(
                 XplerLog.e(NoSuchMethodException("$value no corresponding method was matched in the target class!"))
             }
         }
+    }
+
+    /**
+     * 参数类型比较, 若某个参数为 null 则模糊匹配, 返回 `true`, 否则进行类型比较。
+     *
+     * @param method 被比较方法
+     * @param targetParamTypes 被比较的参数类型列表
+     */
+    private fun compareParamTypes(method: Method, targetParamTypes: Array<out Class<*>?>): Boolean {
+        val parameterTypes = method.parameterTypes
+
+        // 比较数量
+        if (parameterTypes.size != targetParamTypes.size) {
+            return false
+        }
+
+        for (i in parameterTypes.indices) {
+            val type = parameterTypes[i]
+            val targetType = targetParamTypes[i] ?: continue // null则模糊匹配
+
+            // 类直接比较
+            if (type == targetType) {
+                continue
+            }
+
+            // 参数类型不一致
+            return false
+        }
+
+        // 所有参数类型一致
+        return true
     }
 
     /**
@@ -296,13 +336,7 @@ abstract class HookEntity<T>(
 
             val names = key.key.name
             val paramTypes = getTargetMethodParamTypes(value)
-            val returnType = value.getAnnotation(ReturnType::class.java)?.let {
-                if (it.type != Class::class) {
-                    return@let it.type.java.name
-                }
-
-                return@let it.name.trim()
-            } ?: ""
+            val returnType = value.getAnnotation(ReturnType::class.java)?.name?.trim() ?: ""
 
             val methods = filterHookMethods(value, names, paramTypes, returnType)
 
@@ -335,13 +369,7 @@ abstract class HookEntity<T>(
 
             val names = key.key.name
             val paramTypes = getTargetMethodParamTypes(value)
-            val returnType = value.getAnnotation(ReturnType::class.java)?.let {
-                if (it.type != Class::class) {
-                    return@let it.type.java.name
-                }
-
-                return@let it.name.trim()
-            } ?: ""
+            val returnType = value.getAnnotation(ReturnType::class.java)?.name?.trim() ?: ""
 
             val methods = filterHookMethods(value, names, paramTypes, returnType)
 
@@ -375,13 +403,7 @@ abstract class HookEntity<T>(
 
             val names = key.key.name
             val paramTypes = getTargetMethodParamTypes(value)
-            val returnType = value.getAnnotation(ReturnType::class.java)?.let {
-                if (it.type != Class::class) {
-                    return@let it.type.java.name
-                }
-
-                return@let it.name.trim()
-            } ?: ""
+            val returnType = value.getAnnotation(ReturnType::class.java)?.name?.trim() ?: ""
 
             val methods = filterHookMethods(value, names, paramTypes, returnType)
 
@@ -579,13 +601,14 @@ abstract class HookEntity<T>(
         name: String,
         classLoader: ClassLoader? = null,
     ): Class<*>? {
-        if (name.isEmpty() || name.isBlank() || name == "null") {
+        val optName = simpleName(name)
+        if (optName.isEmpty() || optName.isBlank() || optName == "null") {
             return null
         }
 
         //
         return try {
-            XposedHelpers.findClass(name, classLoader ?: lpparam.classLoader)
+            XposedHelpers.findClass(optName, classLoader ?: lpparam.classLoader)
         } catch (e: Exception) {
             return null
         }

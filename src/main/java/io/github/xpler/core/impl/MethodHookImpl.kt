@@ -55,7 +55,7 @@ open class MethodHookImpl(private var method: Member) : MethodHook {
 
         if (replaceBlock != null) {
             val unhook = XposedBridge.hookMethod(method, object : XC_MethodReplacement() {
-                override fun replaceHookedMethod(param: MethodHookParam): Any {
+                override fun replaceHookedMethod(param: MethodHookParam): Any? {
                     runCatching {
                         val invoke = replaceBlock!!.invoke(param)
                         maybeUnhook(param.method)
