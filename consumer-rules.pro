@@ -2,7 +2,6 @@
 -keepclassmembers class io.github.xpler.** { *; }
 -keep,allowobfuscation class io.github.xpler.core.entity.KeepParam
 -keep,allowobfuscation class io.github.xpler.core.entity.Param
--keep,allowobfuscation class io.github.xpler.core.entity.FutureHook
 -keep,allowobfuscation class io.github.xpler.core.entity.ReturnType
 -keep,allowobfuscation class io.github.xpler.core.entity.HookOnce
 -keep,allowobfuscation class io.github.xpler.core.entity.OnBefore
@@ -14,7 +13,6 @@
 -keepclassmembers class * {
     @io.github.xpler.core.entity.KeepParam <methods>;
     @io.github.xpler.core.entity.Param <methods>;
-    @io.github.xpler.core.entity.FutureHook <methods>;
     @io.github.xpler.core.entity.ReturnType <methods>;
     @io.github.xpler.core.entity.HookOnce <methods>;
     @io.github.xpler.core.entity.OnBefore <methods>;

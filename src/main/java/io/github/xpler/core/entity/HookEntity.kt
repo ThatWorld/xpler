@@ -137,20 +137,6 @@ annotation class ReturnType(val name: String = "")
 annotation class HookOnce()
 
 /**
- * 未来方法的Hook注解。
- *
- * 对部分将来会出现的方法Hook操作, 场景如下:
- *
- * 某些方法在低版本未出现, 而却在新版本出现了, 这时才会对目标方法Hook;
- * 同理, 未来方法如果被删除, 也不会对这些方法进行Hook。
- *
- * 需要搭配 [OnBefore]、[OnAfter]、[OnReplace] 注解使用，对于构造方法该注解不适用。
- */
-@Deprecated("新逻辑下只有搜索到指定方法才勾住, 该注解将在后续删除")
-@Target(AnnotationTarget.FUNCTION)
-annotation class FutureHook()
-
-/**
  * HookEntity 实体类，提供对某个Hook目标类的便捷操作
  */
 abstract class HookEntity<T>(
