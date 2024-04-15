@@ -22,6 +22,7 @@ import de.robv.android.xposed.XposedHelpers
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 import io.github.xpler.core.impl.ConstructorHookImpl
 import io.github.xpler.core.impl.MethodHookImpl
+import io.github.xpler.core.log.XplerLog
 import io.github.xpler.core.wrapper.ConstructorHook
 import io.github.xpler.core.wrapper.MethodHook
 import io.github.xpler.utils.XplerUtils
@@ -318,6 +319,38 @@ class KtXposedHelpers {
                 block.invoke(methodHookImpl)
                 methodHookImpl.startHook()
             }
+        }
+        return this
+    }
+
+    /**
+     * Hook某个类中所有参数类型[argsTypes]相同的方法,
+     *
+     * 不在乎方法名、返回类型
+     *
+     * @param argsTypes 方法名
+     * @param block hook代码块, 可在内部书写hook逻辑
+     */
+    fun methodAllByParamTypes(vararg argsTypes: Class<*>, block: MethodHook.() -> Unit): KtXposedHelpers {
+        if (argsTypes.isEmpty()) {
+            XplerLog.e("argsTypes is empty!")
+            return this
+        }
+
+        val methods = clazz!!.declaredMethods
+        for (method in methods) {
+            if (Modifier.isAbstract(method.modifiers)) {
+                continue
+            }
+
+            if (!XplerUtils.compareParamTypes(method, argsTypes)) {
+                continue
+            }
+
+            method.isAccessible = true
+            val methodHookImpl = MethodHookImpl(method)
+            block.invoke(methodHookImpl)
+            methodHookImpl.startHook()
         }
         return this
     }

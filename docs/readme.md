@@ -29,9 +29,10 @@ Xposed Kotlin 开发模板，更适合Kotlin编码风格。
       override val modulePackage: String
           get() = "com.example.module"
   
-      override val scopes: Array<ApplicationHookStart.Scope>
+      override val scopes: Set<ApplicationHookStart.Scope>
           get() = arrayOf(
               "packageName" at "applicationClassName",
+              "packageName1" at ("applicationClassName1" to "processName"),
           )
   
       override fun onCreateBefore(lpparam: XC_LoadPackage.LoadPackageParam, hostApp: Application) {
@@ -48,7 +49,7 @@ Xposed Kotlin 开发模板，更适合Kotlin编码风格。
 
   `modulePackage` 为模块包名，必须提供，`Xpler` 会用它去加载 `HookState`，以便对于模块启用/未启用状态的获取。
 
-  `scopes` 为宿主列表，需提供 `宿主包名` 和 `宿主启动应用程序(Application)`，不在 `scopes` 列表中的包名，尽管在`Xposed`中加入生效列表，`Xpler`也不会对该宿主生效。
+  `scopes` 为宿主列表，需提供 `宿主包名` 和 `宿主启动应用程序(Application)`、 `宿主进程名(prossName)可选`，不在 `scopes` 列表中的包名，尽管在`Xposed`中加入生效列表，`Xpler`也不会对该宿主生效。
 
   而如果，你只是需要一个简单的Hook，并不需要复杂操作，可以试试 `DefaultHookStart` 接口。
 
@@ -71,7 +72,7 @@ Xposed Kotlin 开发模板，更适合Kotlin编码风格。
 
 
 
-> 不过，记得修改`xposed_init` 中的入口类，如上述的类名为：`com.example.module.HookInit`。
+> 记得修改`xposed_init` 中的入口类，如上述的入口类名为：`com.example.module.HookInit`。
 >
 > 还有，如果有混淆优化，记得保留 `HookInit` 入口类。
 
@@ -307,4 +308,20 @@ class HMainActivity : HookEntity<MainActivity>(){
 
 
 
-> Xpler 在 [FreedomPlus](https://github.com/GangJust/FreedomPlus) 中被很好的实践运用，如果你想要更多示例，请点击[这里](https://github.com/GangJust/FreedomPlus/tree/master/core/src/main/java/io/github/fplus/core/hook)。
+## Live Template
+
+当大量的模板代码在代码中重复出现时，你可以很好的运用 Android Studio 的  `Live Template` 来快速生成它们的基础代码。
+
+`Xpler`提供了一个模板代码列表，以下是相应截图：
+
+![xpler_live_template](images/xpler_live_template.png)
+
+
+
+你可以下载  [xpler-templates.zip](https://github.com/GangJust/xpler/tree/master/docs/assets)，然后通过 Android Studio 菜单： File -> Manage IDE Settings ->  Import Settings 导入该 `Live Template` 模板代码。
+
+
+
+
+
+> Xpler 在 [FreedomPlus](https://github.com/GangJust/FreedomPlus) 中被很好的实践运用，如果你想要更多示例，请点击 [这里](https://github.com/GangJust/FreedomPlus/tree/master/core/src/main/java/io/github/fplus/core/hook)。
