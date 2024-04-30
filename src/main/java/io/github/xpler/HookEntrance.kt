@@ -29,11 +29,8 @@ abstract class HookEntrance<T : HookStart> :
     }
 
     override fun handleLoadPackage(lp: XC_LoadPackage.LoadPackageParam) {
-        // default output of logs to xposed
-        XplerLog.isXposed(true)
-
         if (hookStart.isInterface) {
-            XplerLog.e(IllegalArgumentException("You must provide an implementation class for `HookStart` instead of an interface."))
+            XposedBridge.log(IllegalArgumentException("You must provide an implementation class for `HookStart` instead of an interface."))
             return
         }
 
@@ -108,13 +105,14 @@ abstract class HookEntrance<T : HookStart> :
             }
 
             if (scope.applicationClassName.isEmpty()) {
-                XplerLog.e(IllegalArgumentException("This scope provided application class name it's empty."))
+                XposedBridge.log(IllegalArgumentException("This scope provided application class name it's empty."))
                 return@forEach
             }
 
             lp.hookClass(scope.applicationClassName)
                 .method("onCreate") {
                     onBefore {
+                        XplerLog.isXposed(true) // default output of logs to xposed
                         KtXposedHelpers.setLpparam(lp)
                         val application = thisApplication
                         injectClassLoader(lp, application.classLoader)
@@ -133,6 +131,7 @@ abstract class HookEntrance<T : HookStart> :
         lp: XC_LoadPackage.LoadPackageParam,
         start: DefaultHookStart,
     ) {
+        XplerLog.isXposed(true) // default output of logs to xposed
         KtXposedHelpers.setLpparam(lp)
         start.loadPackage(lp)
     }

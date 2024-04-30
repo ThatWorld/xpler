@@ -169,6 +169,9 @@ abstract class HookEntity<T>(
             if (targetClazz == NoneHook::class.java)
                 return@runCatching
 
+            if (targetClazz == Nothing::class.java)
+                return@runCatching
+
             if (targetClazz != EmptyHook::class.java) {
                 if (targetClazz == Any::class.java)
                     throw ClassFormatError("Please override the `setTargetClass()` to specify the hook target class!")
@@ -287,9 +290,17 @@ abstract class HookEntity<T>(
             sequence = sequence.filter { simpleName(returnType) == it.returnType.name }
         }
 
-        return sequence.toList().also {
-            if (it.isEmpty()) {
-                XplerLog.e(NoSuchMethodException("$value no corresponding method was matched in the target class!"))
+        return sequence.toList().also { item ->
+            if (item.isEmpty()) {
+                val errMsg = StringBuilder()
+                errMsg.append("\n╭───────────────────────────────\n")
+                errMsg.append("├─${NoSuchMethodException::class.java.name}: No method in the target class meets the following conditions!\n")
+                errMsg.append("├─entity: ${this.javaClass.name}#${value.name}\n")
+                errMsg.append("├─names: ${names.joinToString(", ")}\n")
+                errMsg.append("├─params: ${paramTypes.joinToString(", ") { it?.name ?: "null" }}\n")
+                errMsg.append("├─return: $returnType")
+                errMsg.append("\n╰───────────────────────────────\n")
+                XplerLog.e(errMsg.toString())
             }
         }
     }

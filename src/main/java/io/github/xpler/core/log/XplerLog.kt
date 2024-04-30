@@ -191,11 +191,11 @@ class XplerLog {
         /**
          * 日志输出到Xposed。
          *
-         * @param b 是否输出到Xposed日志
+         * @param xposed 是否输出到Xposed日志
          */
         @JvmStatic
-        fun isXposed(b: Boolean) {
-            instance.xposed = b
+        fun isXposed(xposed: Boolean) {
+            instance.xposed = xposed
         }
 
         /**
