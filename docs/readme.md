@@ -236,12 +236,16 @@ Xposed Kotlin 开发模板，更适合Kotlin编码风格。
 
 为了更合适通俗的编码方式，对于需要被Hook的目标类及其方法 `HookEntity` 支持以传统类定义的方式来书写Hook逻辑，下称`Hook逻辑类`。
 
-对于某个Class目标的Hook，Hook逻辑类需要继承 `HookEntity<T>` 并将泛型 `<T>` 修改为目标Class，然后通过系列注解完成Hook逻辑的编写，最后在 `主逻辑` 中完成实例化，即可注入相关方法的Hook逻辑，以下是简单示例：
+对于某个Class目标的Hook，Hook逻辑类需要继承 `HookEntity` 并实现抽象方法`setTargetClass` 主动设置目标Class，然后通过系列注解完成Hook逻辑的编写，最后在 `主逻辑` 中完成实例化，即可注入相关方法的Hook逻辑，以下是简单示例：
 
 ```kotlin
 // 目标类 Activity
-class HActivity : HookEntity<Activity>(){
+class HActivity : HookEntity(){
    
+    override fun setTargetClass(): Class<*> {
+        return findClass("android.app.Activity")
+    }
+    
     @OnBefore("onCreate")
     fun onCreateBefore(params: XC_MethodHook.MethodHookParam, savedInstanceState: Bundle?) {
         hookBlockRunning(params) { // this: XC_MethodHook.MethodHookParam
@@ -279,7 +283,11 @@ override fun onCreateAfter(lpparam: XC_LoadPackage.LoadPackageParam, hostApp: Ap
 以下是一个稍复杂的写法，自行体会：
 
 ```kotlin
-class HMainActivity : HookEntity<MainActivity>(){
+class HMainActivity : HookEntity(){
+    
+    override fun setTargetClass(): Class<*> {
+        return findClass("android.app.Activity")
+    }
     
     @OnConstructorBefore
     fun constructorBefore(params: XC_MethodHook.MethodHookParam){

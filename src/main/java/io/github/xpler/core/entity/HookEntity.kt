@@ -13,7 +13,6 @@ import io.github.xpler.core.wrapper.CallConstructors
 import io.github.xpler.core.wrapper.CallMethods
 import io.github.xpler.utils.XplerUtils
 import java.lang.reflect.Method
-import java.lang.reflect.ParameterizedType
 
 /// 使用案例, 详见: https://github.com/GangJust/xpler/blob/master/readme.md
 
@@ -153,11 +152,10 @@ annotation class HookOnce()
 /**
  * HookEntity 实体类，提供对某个Hook目标类的便捷操作
  */
-abstract class HookEntity<T>(
+abstract class HookEntity(
     protected val lpparam: XC_LoadPackage.LoadPackageParam = KtXposedHelpers.lpparam,
 ) {
-    private lateinit var mTargetClazz: Class<*>
-    protected val targetClazz get() = mTargetClazz
+    private lateinit var mTargetClass: Class<*>
     private val targetMethods = mutableSetOf<Method>()
 
     private var hookHelper: KtXposedHelpers? = null
@@ -165,18 +163,18 @@ abstract class HookEntity<T>(
 
     init {
         runCatching {
-            mTargetClazz = this.setTargetClass()
-            if (targetClazz == NoneHook::class.java)
+            mTargetClass = this.setTargetClass()
+            if (targetClass == NoneHook::class.java)
                 return@runCatching
 
-            if (targetClazz == Nothing::class.java)
+            if (targetClass == Nothing::class.java)
                 return@runCatching
 
-            if (targetClazz != EmptyHook::class.java) {
-                if (targetClazz == Any::class.java)
+            if (targetClass != EmptyHook::class.java) {
+                if (targetClass == Any::class.java)
                     throw ClassFormatError("Please override the `setTargetClass()` to specify the hook target class!")
 
-                hookHelper = KtXposedHelpers.hookClass(targetClazz)
+                hookHelper = KtXposedHelpers.hookClass(targetClass)
 
                 getMineAllMethods()
                 getHookTargetAllMethods()
@@ -200,15 +198,19 @@ abstract class HookEntity<T>(
     }
 
     /**
+     * 子类手动设置目标类
+     */
+    abstract fun setTargetClass(): Class<*>
+
+    /**
+     * 获取当前目标类
+     */
+    protected val targetClass get() = mTargetClass
+
+    /**
      * 相当于每个Hook逻辑类的入口方法
      */
     open fun onInit() {}
-
-    /**
-     * 手动设置目标类, 通常在泛型 <T> 为 Any 时做替换, 常见情况是无法直接`import`宿主类时,
-     * 则需要通过: XposedHelpers.findClass("类名", lpparam.classLoader)
-     */
-    open fun setTargetClass(): Class<*> = getHookTargetClass()
 
     /**
      * 查找某类
@@ -233,14 +235,6 @@ abstract class HookEntity<T>(
     }
 
     /**
-     * 获取子类泛型中的Hook目标类, 如果泛型类是 Any, 则需要通过 [setTargetClass] 对指定类进行设置
-     */
-    private fun getHookTargetClass(): Class<*> {
-        val type = this::class.java.genericSuperclass as ParameterizedType
-        return type.actualTypeArguments[0] as Class<*>
-    }
-
-    /**
      * 获取泛型子类的所有方法
      */
     private fun getMineAllMethods() {
@@ -251,7 +245,7 @@ abstract class HookEntity<T>(
      * 获取Hook目标类中的所有方法
      */
     private fun getHookTargetAllMethods() {
-        targetMethods.addAll(targetClazz.declaredMethods)
+        targetMethods.addAll(targetClass.declaredMethods)
     }
 
     /**
@@ -416,7 +410,7 @@ abstract class HookEntity<T>(
 
             val paramTypes = getTargetMethodParamTypes(value)
             val normalParamTypes = paramTypes.map { it ?: Any::class.java }.toTypedArray()
-            ConstructorHookImpl(targetClazz, *normalParamTypes)
+            ConstructorHookImpl(targetClass, *normalParamTypes)
                 .apply {
                     onBefore {
                         val invArgs = arrayOf(this, *argsOrEmpty)
@@ -440,7 +434,7 @@ abstract class HookEntity<T>(
 
             val paramTypes = getTargetMethodParamTypes(value)
             val normalParamTypes = paramTypes.map { it ?: Any::class.java }.toTypedArray()
-            ConstructorHookImpl(targetClazz, *normalParamTypes)
+            ConstructorHookImpl(targetClass, *normalParamTypes)
                 .apply {
                     onAfter {
                         val invArgs = arrayOf(this, *argsOrEmpty)
@@ -462,7 +456,7 @@ abstract class HookEntity<T>(
             value.isAccessible = true
             val paramTypes = getTargetMethodParamTypes(value)
             val normalParamTypes = paramTypes.map { it ?: Any::class.java }.toTypedArray()
-            ConstructorHookImpl(targetClazz, *normalParamTypes)
+            ConstructorHookImpl(targetClass, *normalParamTypes)
                 .apply {
                     onReplace {
                         val invArgs = arrayOf(this, *argsOrEmpty)

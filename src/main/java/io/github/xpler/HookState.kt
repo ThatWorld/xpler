@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.util.Base64
+import androidx.annotation.Keep
 import io.github.xpler.utils.XplerUtils
 import org.json.JSONObject
 
@@ -18,6 +19,7 @@ object HookState {
      *
      */
     val isEnabled: Boolean
+        @Keep
         get() = false
 
     /**
@@ -28,12 +30,14 @@ object HookState {
      * see at: [io.github.xpler.HookEntrance.initModule]
      */
     val framework: String
+        @Keep
         get() = "Unknown"
 
     /**
      * 获取当前框架版本号。
      */
     val version: Int
+        @Keep
         get() = -1
 
     /**
@@ -42,6 +46,7 @@ object HookState {
      * @param context Context
      * @return 是否被启用
      */
+    @Keep
     fun isExpActive(context: Context): Boolean {
         // 是否安装太极
         val installed = XplerUtils.isAppInstalled(context, "me.weishu.exp")
@@ -84,6 +89,7 @@ object HookState {
      * @param packageName PackageName
      * @return 字符串数组, 包含LSPatch基本信息：运行模式、版本名、版本号。
      */
+    @Keep
     fun isLSPatchActive(context: Context, packageName: String): Array<String> {
         // see at:
         // https://github.com/LSPosed/LSPatch/blob/master/manager/src/main/java/org/lsposed/lspatch/util/LSPPackageManager.kt#L73
