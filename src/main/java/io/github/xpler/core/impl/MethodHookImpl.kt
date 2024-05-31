@@ -1,7 +1,5 @@
 package io.github.xpler.core.impl
 
-import de.robv.android.xposed.XC_MethodHook
-import de.robv.android.xposed.XC_MethodReplacement
 import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.XposedHelpers
 import io.github.xpler.core.log.XplerLog
@@ -18,8 +16,6 @@ open class MethodHookImpl(private var method: Member) : MethodHook {
     private var beforeBlock: OnBeforeBlock? = null
     private var afterBlock: OnAfterBlock? = null
     private var replaceBlock: OnReplaceBlock? = null
-
-    private var unhookMap: MutableMap<Member, XC_MethodHook.Unhook> = mutableMapOf()
     private var unHookBlock: OnUnhookBlock? = null
 
     constructor(clazz: Class<*>, methodName: String, vararg argsTypes: Any) :
@@ -54,61 +50,11 @@ open class MethodHookImpl(private var method: Member) : MethodHook {
         }
 
         if (replaceBlock != null) {
-            val unhook = XposedBridge.hookMethod(method, object : XC_MethodReplacement() {
-                override fun replaceHookedMethod(param: MethodHookParam): Any? {
-                    runCatching {
-                        val invoke = replaceBlock!!.invoke(param)
-                        maybeUnhook(param.method)
-                        return invoke
-                    }.onFailure {
-                        val err = "host app method: ${param.method}\n" +
-                                "message: ${it.message}\n" +
-                                "stack trace: ${it.stackTraceToString()}"
-                        XplerLog.e(err)
-                    }
-                    return param.resultOrThrowable
-                }
-            })
-            unhookMap[method] = unhook
+            val impl = MethodReplacementCallbackImpl(replaceBlock, unHookBlock)
+            impl.unhook = XposedBridge.hookMethod(method, impl)
         } else {
-            val unhook = XposedBridge.hookMethod(method, object : XC_MethodHook() {
-                override fun beforeHookedMethod(param: MethodHookParam) {
-                    runCatching {
-                        beforeBlock?.invoke(param)
-                        if (afterBlock != null) return
-                        maybeUnhook(param.method)
-                    }.onFailure {
-                        val err = "host app method: ${param.method}\n" +
-                                "message: ${it.message}\n" +
-                                "stack trace: ${it.stackTraceToString()}"
-                        XplerLog.e(err)
-                    }
-                }
-
-                override fun afterHookedMethod(param: MethodHookParam) {
-                    runCatching {
-                        afterBlock?.invoke(param)
-                        maybeUnhook(param.method)
-                    }.onFailure {
-                        val err = "host app method: ${param.method}\n" +
-                                "message: ${it.message}\n" +
-                                "stack trace: ${it.stackTraceToString()}"
-                        XplerLog.e(err)
-                    }
-                }
-            })
-            unhookMap[method] = unhook
+            val impl = MethodHookCallbackImpl(beforeBlock, afterBlock, unHookBlock)
+            impl.unhook = XposedBridge.hookMethod(method, impl)
         }
-    }
-
-    // 解开hook
-    fun maybeUnhook(method: Member) {
-        if (unHookBlock == null) return
-        if (!unhookMap.containsKey(method)) return
-
-        val unhook = unhookMap[method]!!
-        unHookBlock!!.invoke(unhook.hookedMethod, unhook.callback)
-        unhook.unhook()
-        unhookMap.remove(method)
     }
 }

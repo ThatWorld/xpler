@@ -20,12 +20,12 @@ Xposed Kotlin 开发模板，更适合Kotlin编码风格。
 
 ### HookEntrance.kt
 
-作为 `Xpler` 给 `Xposed` 提供的抽象入口类，你只需要继承`HookEntrance<T : HookStart>`，然后实现相应接口即可。
+作为 `Xpler` 给 `Xposed` 提供的抽象入口类，你只需要继承 `HookEntrance`，然后实现相应接口即可。
 
 - ApplicationHookStart
 
   ```kotlin
-  class HookInit : HookEntrance<HookInit>(), ApplicationHookStart {
+  class HookInit : HookEntrance(), ApplicationHookStart {
       override val modulePackage: String
           get() = "com.example.module"
   
@@ -58,7 +58,7 @@ Xposed Kotlin 开发模板，更适合Kotlin编码风格。
 - DefaultHookStart
 
   ```kotlin
-  class HookInit() : HookEntrance<HookInit>(), DefaultHookStart {
+  class HookInit() : HookEntrance(), DefaultHookStart {
       override val modulePackage: String
           get() = "com.example.module"
   
@@ -75,6 +75,11 @@ Xposed Kotlin 开发模板，更适合Kotlin编码风格。
 > 记得修改`xposed_init` 中的入口类，如上述的入口类名为：`com.example.module.HookInit`。
 >
 > 还有，如果有混淆优化，记得保留 `HookInit` 入口类。
+>
+> ```protobuf
+> //proguard-rules.pro
+> -keep class com.example.module.HookInit
+> ```
 
 
 

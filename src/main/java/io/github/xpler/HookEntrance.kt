@@ -13,40 +13,29 @@ import io.github.xpler.core.wrapper.ApplicationHookStart
 import io.github.xpler.core.wrapper.DefaultHookStart
 import io.github.xpler.core.wrapper.HookStart
 import io.github.xpler.loader.injectClassLoader
-import java.lang.reflect.ParameterizedType
 
 // Hook init entrance
-abstract class HookEntrance<T : HookStart> :
-    IXposedHookLoadPackage, IXposedHookZygoteInit {
-
-    private val hookStart by lazy {
-        val type = this::class.java.genericSuperclass as ParameterizedType
-        type.actualTypeArguments[0] as Class<*>
-    }
-
+abstract class HookEntrance : IXposedHookLoadPackage, IXposedHookZygoteInit {
     override fun initZygote(sparam: IXposedHookZygoteInit.StartupParam) {
         KtXposedHelpers.initModule(sparam.modulePath)
     }
 
     override fun handleLoadPackage(lp: XC_LoadPackage.LoadPackageParam) {
-        if (hookStart.isInterface) {
-            XposedBridge.log(IllegalArgumentException("You must provide an implementation class for `HookStart` instead of an interface."))
+        if (this !is HookStart) {
+            XposedBridge.log(IllegalArgumentException("You must implement the `HookStart` sub-level interface."))
             return
         }
 
-        // create
-        val newInstance = hookStart.getConstructor().newInstance() as HookStart
-
         // init module status
-        if (lp.packageName == newInstance.modulePackage) {
+        if (lp.packageName == this.modulePackage) {
             initModule(lp)
             return
         }
 
         // hook entrance
-        when (newInstance) {
-            is ApplicationHookStart -> applicationHookStart(lp, newInstance)
-            is DefaultHookStart -> defaultHookStart(lp, newInstance)
+        when (this) {
+            is ApplicationHookStart -> applicationHookStart(lp, this)
+            is DefaultHookStart -> defaultHookStart(lp, this)
         }
     }
 

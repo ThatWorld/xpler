@@ -1,5 +1,6 @@
-# 模块核心
--keepclassmembers,allowobfuscation class io.github.xpler.** { *; }
+# Xpler核心
+-keepclassmembers class io.github.xpler.core.impl.MethodHookCallbackImpl { *; }
+-keepclassmembers class io.github.xpler.core.impl.MethodReplacementCallbackImpl { *; }
 -keepclassmembers,allowobfuscation class io.github.xpler.core.entity.KeepParam
 -keepclassmembers,allowobfuscation class io.github.xpler.core.entity.Param
 -keepclassmembers,allowobfuscation class io.github.xpler.core.entity.ReturnType
@@ -23,5 +24,8 @@
     @io.github.xpler.core.entity.OnConstructorAfter <methods>;
     @io.github.xpler.core.entity.OnConstructorReplace <methods>;
 }
--keep,allowobfuscation class io.github.xpler.HookEntrance
--keepclassmembers class io.github.xpler.HookState
+-keepclassmembers class io.github.xpler.HookEntrance {
+    public void *(de.robv.android.xposed.IXposedHookZygoteInit$StartupParam);
+    public void *(de.robv.android.xposed.callbacks.XC_LoadPackage$LoadPackageParam);
+}
+-keepclassmembers class io.github.xpler.HookState { *; }
