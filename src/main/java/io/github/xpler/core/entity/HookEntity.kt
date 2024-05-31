@@ -290,6 +290,7 @@ abstract class HookEntity(
                 errMsg.append("\n╭───────────────────────────────\n")
                 errMsg.append("├─${NoSuchMethodException::class.java.name}: No method in the target class meets the following conditions!\n")
                 errMsg.append("├─entity: ${this.javaClass.name}#${value.name}\n")
+                errMsg.append("├─target: ${targetClass.name}\n")
                 errMsg.append("├─names: ${names.joinToString(", ")}\n")
                 errMsg.append("├─params: ${paramTypes.joinToString(", ") { it?.name ?: "null" }}\n")
                 errMsg.append("├─return: $returnType")
