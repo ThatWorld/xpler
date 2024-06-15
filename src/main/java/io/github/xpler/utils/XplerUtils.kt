@@ -84,6 +84,18 @@ object XplerUtils {
     }
 
     /**
+     * 字节码签名转换：Landroid/view/View; -> android.view.View
+     *
+     * @param name 类名
+     */
+    fun simpleName(name: String): String {
+        if (name.startsWith('L') && name.endsWith(';') || name.contains('/'))
+            return name.removePrefix("L").removeSuffix(";").replace("/", ".")
+
+        return name
+    }
+
+    /**
      * 参数类型比较, 若某个参数为 null 则模糊匹配, 返回 `true`, 否则进行类型比较。
      *
      * @param method 被比较方法

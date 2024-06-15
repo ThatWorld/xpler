@@ -217,7 +217,7 @@ abstract class HookEntity(
      */
     open fun findClass(className: String, classLoader: ClassLoader? = null): Class<*> {
         return try {
-            XposedHelpers.findClass(className, classLoader ?: lpparam.classLoader)
+            XposedHelpers.findClass(simpleName(className), classLoader ?: lpparam.classLoader)
         } catch (e: Exception) {
             XplerLog.tagE(this.javaClass.simpleName, e)
             NoneHook::class.java
@@ -228,10 +228,7 @@ abstract class HookEntity(
      * 字节码签名转换：Landroid/view/View; -> android.view.View
      */
     protected fun simpleName(name: String): String {
-        if (name.startsWith('L') && name.endsWith(';') || name.contains('/'))
-            return name.removePrefix("L").removeSuffix(";").replace("/", ".")
-
-        return name
+        return XplerUtils.simpleName(name)
     }
 
     /**
@@ -613,7 +610,7 @@ abstract class HookEntity(
     private fun defaultHookAllConstructor() {
         // 所有构造方法
         if (this@HookEntity is CallConstructors) {
-            hookHelper?.constructorsAll {
+            hookHelper?.constructorAll {
                 onBefore {
                     callOnBeforeConstructors(this)
                 }

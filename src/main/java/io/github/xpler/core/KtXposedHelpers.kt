@@ -27,6 +27,7 @@ import io.github.xpler.core.wrapper.ConstructorHook
 import io.github.xpler.core.wrapper.MethodHook
 import io.github.xpler.utils.XplerUtils
 import java.io.File
+import java.lang.reflect.Constructor
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
 
@@ -130,6 +131,29 @@ class KtXposedHelpers {
          * 可以参考 [io.github.xpler.HookEntrance.handleLoadPackage] 的实现
          */
         val lpparam: XC_LoadPackage.LoadPackageParam get() = this.mLpparam!!
+
+        /**
+         * 查找某个类
+         */
+        fun findClass(className: String, classLoader: ClassLoader? = lpparam.classLoader): Class<*> {
+            return XposedHelpers.findClass(XplerUtils.simpleName(className), classLoader)
+        }
+
+        /**
+         * 查找某个方法
+         */
+        fun findMethod(className: String, methodName: String, vararg argsTypes: Array<out Any>): Method {
+            val clazz = findClass(className)
+            return XposedHelpers.findMethodBestMatch(clazz, methodName, *argsTypes)
+        }
+
+        /**
+         * 查找某个构造方法
+         */
+        fun findConstructor(className: String, vararg argsTypes: Array<out Any>): Constructor<*> {
+            val clazz = findClass(className)
+            return XposedHelpers.findConstructorBestMatch(clazz, *argsTypes)
+        }
 
         /**
          * 加载模块中的xml布局文件
@@ -240,7 +264,7 @@ class KtXposedHelpers {
      *
      * @param block hook代码块, 可在内部书写hook逻辑
      */
-    fun constructorsAll(block: MethodHook.() -> Unit): KtXposedHelpers {
+    fun constructorAll(block: MethodHook.() -> Unit): KtXposedHelpers {
         val constructors = clazz!!.declaredConstructors
         for (c in constructors) {
             c.isAccessible = true

@@ -3,8 +3,10 @@ package io.github.xpler.core
 import android.app.Activity
 import android.app.Application
 import android.content.Context
+import android.content.pm.PackageInfo
 import android.content.res.XmlResourceParser
 import android.graphics.drawable.Drawable
+import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.AnimRes
@@ -13,6 +15,7 @@ import androidx.annotation.ColorRes
 import androidx.annotation.DrawableRes
 import androidx.annotation.LayoutRes
 import androidx.annotation.StringRes
+import androidx.appcompat.app.AppCompatActivity
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.XposedHelpers
@@ -22,6 +25,8 @@ import io.github.xpler.core.impl.MethodHookImpl
 import io.github.xpler.core.log.XplerLog
 import io.github.xpler.core.wrapper.ConstructorHook
 import io.github.xpler.core.wrapper.MethodHook
+import io.github.xpler.utils.XplerUtils
+import java.lang.reflect.Constructor
 import java.lang.reflect.Method
 
 // Method
@@ -30,7 +35,7 @@ import java.lang.reflect.Method
  *
  * @param block hook代码块, 可在内部书写hook逻辑
  */
-fun Method.hook(block: MethodHook.() -> Unit) {
+inline fun Method.hook(block: MethodHook.() -> Unit) {
     val methodHookImpl = MethodHookImpl(this)
     block.invoke(methodHookImpl)
     methodHookImpl.startHook()
@@ -88,7 +93,7 @@ inline fun <reified T> Any.getObjectField(fieldName: String): T? {
  * @param fieldName 字段名
  * @param value 字段值
  */
-fun Any.setObjectField(fieldName: String, value: Any) {
+inline fun <reified T> T.setObjectField(fieldName: String, value: Any) {
     XposedHelpers.setObjectField(this, fieldName, value)
 }
 
@@ -97,7 +102,8 @@ fun Any.setObjectField(fieldName: String, value: Any) {
  * 调用 [setLpparam]方法进行存储, 否则将无法使用
  * 可以参考 [com.freegang.xpler.HookInit.handleLoadPackage] 的实现
  */
-val Any.lpparam: XC_LoadPackage.LoadPackageParam get() = KtXposedHelpers.lpparam
+val Any.lpparam: XC_LoadPackage.LoadPackageParam
+    get() = KtXposedHelpers.lpparam
 
 
 // String
@@ -108,7 +114,7 @@ val Any.lpparam: XC_LoadPackage.LoadPackageParam get() = KtXposedHelpers.lpparam
  * @throws ClassNotFoundError
  * @return 被找到的类
  */
-fun String.findClass(classLoader: ClassLoader = XposedBridge.BOOTCLASSLOADER): Class<*>? {
+fun String.findClass(classLoader: ClassLoader? = KtXposedHelpers.lpparam.classLoader): Class<*>? {
     return XposedHelpers.findClass(this, classLoader)
 }
 
@@ -119,7 +125,7 @@ fun String.findClass(classLoader: ClassLoader = XposedBridge.BOOTCLASSLOADER): C
  * @throws ClassNotFoundError
  * @return KtXposedHelpers
  */
-fun String.hookClass(classLoader: ClassLoader = XposedBridge.BOOTCLASSLOADER): KtXposedHelpers {
+fun String.hookClass(classLoader: ClassLoader? = KtXposedHelpers.lpparam.classLoader): KtXposedHelpers {
     val clazz = XposedHelpers.findClass(this, classLoader)
     return KtXposedHelpers.hookClass(clazz)
 }
@@ -207,7 +213,7 @@ fun Class<*>.hookMethod(
 fun Class<*>.hookConstructorsAll(block: MethodHook.() -> Unit) {
     KtXposedHelpers
         .hookClass(this)
-        .constructorsAll(block)
+        .constructorAll(block)
 }
 
 /**
@@ -299,6 +305,24 @@ fun Context.getModuleString(@StringRes id: Int): String {
     return KtXposedHelpers.moduleRes.getString(id)
 }
 
+/**
+ * 获取模块的PackageInfo
+ */
+val Context.modulePackageInfo: PackageInfo?
+    get() = KtXposedHelpers.modulePackageInfo(this)
+
+/**
+ * 获取模块的版本名
+ */
+val Context.moduleVersionName: String?
+    get() = KtXposedHelpers.moduleVersionName(this)
+
+/**
+ * 获取模块的版本号
+ */
+val Context.moduleVersionCode: Long?
+    get() = KtXposedHelpers.moduleVersionCode(this)
+
 
 // Xposed
 /**
@@ -318,7 +342,7 @@ fun XC_LoadPackage.LoadPackageParam.hookClass(clazz: Class<*>): KtXposedHelpers 
  * @return KtXposedHelpers
  */
 fun XC_LoadPackage.LoadPackageParam.hookClass(className: String): KtXposedHelpers {
-    return KtXposedHelpers.hookClass(className, this.classLoader)
+    return KtXposedHelpers.hookClass(XplerUtils.simpleName(className), this.classLoader)
 }
 
 /**
@@ -328,12 +352,14 @@ fun XC_LoadPackage.LoadPackageParam.hookClass(className: String): KtXposedHelper
  * @return 找到的某个类
  */
 fun XC_LoadPackage.LoadPackageParam.findClass(className: String): Class<*> {
-    return XposedHelpers.findClass(className, this.classLoader)
+    return XposedHelpers.findClass(XplerUtils.simpleName(className), this.classLoader)
 }
 
 /**
  * 查找某个类中的某个方法
+ *
  * @param className 类名
+ * @param methodName 方法名
  * @return 找到的某个方法
  */
 fun XC_LoadPackage.LoadPackageParam.findMethod(
@@ -341,20 +367,45 @@ fun XC_LoadPackage.LoadPackageParam.findMethod(
     methodName: String,
     vararg argTypes: String,
 ): Method {
-    val clazz = XposedHelpers.findClass(className, this.classLoader)
+    val clazz = XposedHelpers.findClass(XplerUtils.simpleName(className), this.classLoader)
     val parameterClasses = argTypes.map { XposedHelpers.findClass(it, this.classLoader) }.toTypedArray()
     return XposedHelpers.findMethodBestMatch(clazz, methodName, *parameterClasses)
+}
+
+/**
+ * 查找某个类中的构造方法
+ *
+ * @param className 类名
+ * @return 找到的某个方法
+ */
+fun XC_LoadPackage.LoadPackageParam.findConstructor(
+    className: String,
+    vararg argTypes: String,
+): Constructor<*> {
+    val clazz = XposedHelpers.findClass(XplerUtils.simpleName(className), this.classLoader)
+    val parameterClasses = argTypes.map { XposedHelpers.findClass(it, this.classLoader) }.toTypedArray()
+    return XposedHelpers.findConstructorBestMatch(clazz, *parameterClasses)
 }
 
 /**
  * 打印方法中的堆栈信息
  */
 fun Any.dumpStackLog() {
-    try {
-        throw Exception("Stack trace")
-    } catch (e: Exception) {
-        XplerLog.d(e.stackTraceToString())
-    }
+    XplerLog.d(Log.getStackTraceString(Throwable("Stack trace")))
+}
+
+/**
+ * 直接设置返回值为Void
+ */
+fun XC_MethodHook.MethodHookParam.resultVoid(): Unit {
+    result = Void.TYPE
+}
+
+/**
+ * 设置返回内容
+ */
+fun XC_MethodHook.MethodHookParam.result(any: Any?): Unit {
+    result = any
 }
 
 /**
@@ -379,6 +430,18 @@ val XC_MethodHook.MethodHookParam.thisActivity: Activity
             throw TypeCastException("$thisObject unable to cast to Activity")
 
         return thisObject as Activity
+    }
+
+/**
+ * 将被Hook的某个方法中的持有实例转为AppCompatActivity, 如果该实例对象不是AppCompatActivity则抛出异常
+ */
+@get:Throws(TypeCastException::class)
+val XC_MethodHook.MethodHookParam.thisAppCompatActivity: AppCompatActivity
+    get() {
+        if (thisObject !is AppCompatActivity)
+            throw TypeCastException("$thisObject unable to cast to AppCompatActivity")
+
+        return thisObject as AppCompatActivity
     }
 
 /**
