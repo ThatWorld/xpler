@@ -21,6 +21,7 @@ import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.XposedHelpers
 import de.robv.android.xposed.XposedHelpers.ClassNotFoundError
 import de.robv.android.xposed.callbacks.XC_LoadPackage
+import io.github.xpler.core.impl.ConstructorHookImpl
 import io.github.xpler.core.impl.MethodHookImpl
 import io.github.xpler.core.log.XplerLog
 import io.github.xpler.core.wrapper.ConstructorHook
@@ -28,6 +29,7 @@ import io.github.xpler.core.wrapper.MethodHook
 import io.github.xpler.utils.XplerUtils
 import java.lang.reflect.Constructor
 import java.lang.reflect.Method
+import java.lang.reflect.Modifier
 
 // Method
 /**
@@ -36,9 +38,9 @@ import java.lang.reflect.Method
  * @param block hook代码块, 可在内部书写hook逻辑
  */
 inline fun Method.hook(block: MethodHook.() -> Unit) {
-    val methodHookImpl = MethodHookImpl(this)
-    block.invoke(methodHookImpl)
-    methodHookImpl.startHook()
+    val impl = MethodHookImpl(this)
+    block.invoke(impl)
+    impl.startHook()
 }
 
 /**
@@ -114,20 +116,10 @@ val Any.lpparam: XC_LoadPackage.LoadPackageParam
  * @throws ClassNotFoundError
  * @return 被找到的类
  */
-fun String.findClass(classLoader: ClassLoader? = KtXposedHelpers.lpparam.classLoader): Class<*>? {
-    return XposedHelpers.findClass(this, classLoader)
-}
-
-/**
- * 将某个字符串转换为Class同时Hook，如果该类不存在抛出异常
- *
- * @param classLoader 类加载器, 默认为[XposedBridge.BOOTCLASSLOADER]
- * @throws ClassNotFoundError
- * @return KtXposedHelpers
- */
-fun String.hookClass(classLoader: ClassLoader? = KtXposedHelpers.lpparam.classLoader): KtXposedHelpers {
-    val clazz = XposedHelpers.findClass(this, classLoader)
-    return KtXposedHelpers.hookClass(clazz)
+fun String.findClass(
+    classLoader: ClassLoader? = null,
+): Class<*>? {
+    return XposedHelpers.findClass(this, classLoader ?: lpparam.classLoader)
 }
 
 
@@ -168,19 +160,43 @@ inline fun <reified T> Class<*>.callStaticMethod(methodName: String, argsTypes: 
 }
 
 /**
+ * 对某个已存在的类进行Hook
+ *
+ * @return KtXposedHelpers
+ */
+fun Class<*>.hook(): KtXposedHelpers {
+    return KtXposedHelpers.hookClass(this)
+}
+
+/**
  * Hook某个Class的构造方法
  *
  * @param argsTypes 参数类型列表
- * @throws block hook代码块, 可在内部书写hook逻辑
- * @return KtXposedHelpers
+ * @param block hook代码块, 可在内部书写hook逻辑
  */
-fun Class<*>.hookConstructor(vararg argsTypes: Any, block: ConstructorHook.() -> Unit): KtXposedHelpers {
-    return KtXposedHelpers
-        .hookClass(this)
-        .constructor(
-            argsTypes = argsTypes,
-            block = block,
-        )
+inline fun Class<*>.hookConstructor(
+    vararg argsTypes: Any,
+    block: ConstructorHook.() -> Unit,
+) {
+    val impl = ConstructorHookImpl(this, argsTypes)
+    block.invoke(impl)
+    impl.startHook()
+}
+
+/**
+ * Hook某个Class的所有构造方法
+ * @param block hook代码块, 可在内部书写hook逻辑
+ */
+inline fun Class<*>.hookConstructorsAll(
+    block: MethodHook.() -> Unit,
+) {
+    val constructors = this.declaredConstructors
+    for (c in constructors) {
+        c.isAccessible = true
+        val impl = MethodHookImpl(c)
+        block.invoke(impl)
+        impl.startHook()
+    }
 }
 
 /**
@@ -188,43 +204,62 @@ fun Class<*>.hookConstructor(vararg argsTypes: Any, block: ConstructorHook.() ->
  *
  * @param methodName 方法名
  * @param argsTypes 参数类型列表
- * @throws block hook代码块, 可在内部书写hook逻辑
- * @return KtXposedHelpers
+ * @param block hook代码块, 可在内部书写hook逻辑
  */
-fun Class<*>.hookMethod(
+inline fun Class<*>.hookMethod(
     methodName: String,
     vararg argsTypes: Any,
     block: MethodHook.() -> Unit,
-): KtXposedHelpers {
-    return KtXposedHelpers
-        .hookClass(this)
-        .method(
-            methodName = methodName,
-            argsTypes = argsTypes,
-            block = block,
-        )
-}
-
-/**
- * Hook某个Class的所有构造方法
- * @throws block hook代码块, 可在内部书写hook逻辑
- * @return KtXposedHelpers
- */
-fun Class<*>.hookConstructorsAll(block: MethodHook.() -> Unit) {
-    KtXposedHelpers
-        .hookClass(this)
-        .constructorAll(block)
+) {
+    val impl = MethodHookImpl(this, methodName, argsTypes)
+    block.invoke(impl)
+    impl.startHook()
 }
 
 /**
  * Hook某个Class的所有方法
- * @throws block hook代码块, 可在内部书写hook逻辑
- * @return KtXposedHelpers
+ * @param block hook代码块, 可在内部书写hook逻辑
  */
-fun Class<*>.hookMethodAll(block: MethodHook.() -> Unit) {
-    KtXposedHelpers
-        .hookClass(this)
-        .methodAll(block)
+inline fun Class<*>.hookMethodAll(
+    block: MethodHook.() -> Unit,
+) {
+    val methods = this.declaredMethods
+    for (method in methods) {
+        if (Modifier.isAbstract(method.modifiers)) {
+            continue
+        }
+
+        method.isAccessible = true
+        val impl = MethodHookImpl(method)
+        block.invoke(impl)
+        impl.startHook()
+    }
+}
+
+/**
+ * 查找某个类中的构造方法
+ *
+ * @param argTypes 参数类型列表
+ */
+fun Class<*>.findConstructor(
+    vararg argTypes: String,
+): Constructor<*> {
+    val parameterClasses = argTypes.map { XposedHelpers.findClass(it, this.classLoader) }.toTypedArray()
+    return XposedHelpers.findConstructorBestMatch(this, *parameterClasses)
+}
+
+/**
+ * 查找某个类中的某个方法
+ *
+ * @param methodName 方法名
+ * @param argTypes 参数类型列表
+ */
+fun Class<*>.findMethod(
+    methodName: String,
+    vararg argTypes: String,
+): Method? {
+    val parameterClasses = argTypes.map { XposedHelpers.findClass(it, this.classLoader) }.toTypedArray()
+    return XposedHelpers.findMethodBestMatch(this, methodName, *parameterClasses)
 }
 
 
@@ -232,20 +267,12 @@ fun Class<*>.hookMethodAll(block: MethodHook.() -> Unit) {
 /**
  * Hook某个Class
  *
- * @param clazz 类
- * @return KtXposedHelpers
- */
-fun ClassLoader.hookClass(clazz: Class<*>): KtXposedHelpers {
-    return KtXposedHelpers.hookClass(clazz.name, this)
-}
-
-/**
- * Hook某个Class
- *
  * @param className 类名
  * @return KtXposedHelpers
  */
-fun ClassLoader.hookClass(className: String): KtXposedHelpers {
+fun ClassLoader.hookClass(
+    className: String,
+): KtXposedHelpers {
     return KtXposedHelpers.hookClass(className, this)
 }
 
@@ -331,60 +358,39 @@ val Context.moduleVersionCode: Long?
  * @param clazz 类
  * @return KtXposedHelpers
  */
-fun XC_LoadPackage.LoadPackageParam.hookClass(clazz: Class<*>): KtXposedHelpers {
-    return KtXposedHelpers.hookClass(clazz.name, this.classLoader)
+fun XC_LoadPackage.LoadPackageParam.hookClass(
+    clazz: Class<*>,
+    loader: ClassLoader? = null,
+): KtXposedHelpers {
+    return KtXposedHelpers.hookClass(clazz.name, loader ?: this.classLoader)
 }
 
 /**
  * Hook某个Class
  *
  * @param className 类名
+ * @param loader 类加载器，默认为[XC_LoadPackage.LoadPackageParam.classLoader]
  * @return KtXposedHelpers
  */
-fun XC_LoadPackage.LoadPackageParam.hookClass(className: String): KtXposedHelpers {
-    return KtXposedHelpers.hookClass(XplerUtils.simpleName(className), this.classLoader)
+fun XC_LoadPackage.LoadPackageParam.hookClass(
+    className: String,
+    loader: ClassLoader? = null,
+): KtXposedHelpers {
+    return KtXposedHelpers.hookClass(XplerUtils.simpleName(className), loader ?: this.classLoader)
 }
 
 /**
  * 查找某个类
  *
  * @param className 类名
+ * @param loader 类加载器，默认为[XC_LoadPackage.LoadPackageParam.classLoader]
  * @return 找到的某个类
  */
-fun XC_LoadPackage.LoadPackageParam.findClass(className: String): Class<*> {
-    return XposedHelpers.findClass(XplerUtils.simpleName(className), this.classLoader)
-}
-
-/**
- * 查找某个类中的某个方法
- *
- * @param className 类名
- * @param methodName 方法名
- * @return 找到的某个方法
- */
-fun XC_LoadPackage.LoadPackageParam.findMethod(
+fun XC_LoadPackage.LoadPackageParam.findClass(
     className: String,
-    methodName: String,
-    vararg argTypes: String,
-): Method {
-    val clazz = XposedHelpers.findClass(XplerUtils.simpleName(className), this.classLoader)
-    val parameterClasses = argTypes.map { XposedHelpers.findClass(it, this.classLoader) }.toTypedArray()
-    return XposedHelpers.findMethodBestMatch(clazz, methodName, *parameterClasses)
-}
-
-/**
- * 查找某个类中的构造方法
- *
- * @param className 类名
- * @return 找到的某个方法
- */
-fun XC_LoadPackage.LoadPackageParam.findConstructor(
-    className: String,
-    vararg argTypes: String,
-): Constructor<*> {
-    val clazz = XposedHelpers.findClass(XplerUtils.simpleName(className), this.classLoader)
-    val parameterClasses = argTypes.map { XposedHelpers.findClass(it, this.classLoader) }.toTypedArray()
-    return XposedHelpers.findConstructorBestMatch(clazz, *parameterClasses)
+    loader: ClassLoader? = null,
+): Class<*> {
+    return XposedHelpers.findClass(XplerUtils.simpleName(className), loader ?: this.classLoader)
 }
 
 /**
