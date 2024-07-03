@@ -18,15 +18,15 @@ class XplerClassloader(
 
     @Throws(ClassNotFoundException::class)
     override fun loadClass(name: String, resolve: Boolean): Class<*> {
-        // try {
-        //     return bootClassloader?.loadClass(name) ?: throw ClassNotFoundException(name)
-        // } catch (e: ClassNotFoundException) {
-        //     // e.printStackTrace()
-        // }
-        //
-        // /// bootClassloader优先加载, 然后跳过冲突类。fix: 太极框架崩溃
-        // if (skipLoad(name))
-        //     throw ClassNotFoundException(name)
+        try {
+            return bootClassloader?.loadClass(name) ?: throw ClassNotFoundException(name)
+        } catch (e: ClassNotFoundException) {
+            // e.printStackTrace()
+        }
+
+        /// bootClassloader优先加载, 然后跳过冲突类。fix: 太极框架崩溃
+        if (skipLoad(name))
+            throw ClassNotFoundException(name)
 
         ///
         try {
