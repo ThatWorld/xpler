@@ -17,139 +17,6 @@ import java.lang.reflect.Method
 /// 使用案例, 详见: https://github.com/GangJust/xpler/blob/master/readme.md
 
 /**
- * 对于目标类某个普通方法的挂勾，等价于 [XC_MethodHook.beforeHookedMethod]。
- *
- * 被标注的方法第一个参数需要是 [XC_MethodHook.MethodHookParam]，其后才是原方法参数列表；
- * 若某个方法中的参数类型无法直接被引用，可参考使用 [Param] 注解直接指定。
- *
- * @param name Hook目标方法名
- *
- */
-@Target(AnnotationTarget.FUNCTION)
-annotation class OnBefore(vararg val name: String)
-
-/**
- * 对于目标类某个普通方法的挂勾，等价于 [XC_MethodHook.afterHookedMethod]。
- *
- * 被标注的方法第一个参数需要是 [XC_MethodHook.MethodHookParam]，其后才是原方法参数列表；
- * 若某个方法中的参数类型无法直接被引用，可参考使用 [Param] 注解直接指定。
- *
- * @param name Hook目标方法名
- *
- */
-@Target(AnnotationTarget.FUNCTION)
-annotation class OnAfter(vararg val name: String)
-
-/**
- * 对于目标类某个普通方法的挂勾，等价于 [XC_MethodReplacement.replaceHookedMethod]。
- *
- * 被标注的方法第一个参数需要是 [XC_MethodHook.MethodHookParam]，其后才是原方法参数列表；
- * 若某个方法中的参数类型无法直接被引用，可参考使用 [Param] 注解直接指定。
- *
- * @param name Hook目标方法名
- *
- */
-@Target(AnnotationTarget.FUNCTION)
-annotation class OnReplace(vararg val name: String)
-
-/**
- * 对于目标类某个构造方法的挂勾，等价于 [XC_MethodHook.beforeHookedMethod]。
- *
- * 被标注的方法第一个参数需要是 [XC_MethodHook.MethodHookParam]，其后才是原方法参数列表；
- * 若某个方法中的参数类型无法直接被引用，可参考使用 [Param] 注解直接指定。
- */
-@Target(AnnotationTarget.FUNCTION)
-annotation class OnConstructorBefore()
-
-/**
- * 对于目标类某个构造方法的挂勾，等价于 [XC_MethodHook.afterHookedMethod]。
- *
- * 被标注的方法第一个参数需要是 [XC_MethodHook.MethodHookParam]，其后才是原方法参数列表；
- * 若某个方法中的参数类型无法直接被引用，可参考使用 [Param] 注解直接指定。
- */
-@Target(AnnotationTarget.FUNCTION)
-annotation class OnConstructorAfter()
-
-/**
- * 对于目标类某个构造方法的挂勾，等价于 [XC_MethodReplacement.replaceHookedMethod]。
- *
- * 被标注的方法第一个参数需要是 [XC_MethodHook.MethodHookParam]，其后才是原方法参数列表；
- * 若某个方法中的参数类型无法直接被引用，可参考使用 [Param] 注解直接指定。
- */
-@Target(AnnotationTarget.FUNCTION)
-annotation class OnConstructorReplace()
-
-/**
- * 对于目标方法中出现的不确定参数类型，默认模糊匹配。
- *
- * 若某个参数属于宿主如：`com.sample.User`，书写时无法直接通过`import`引入，可使用该注解手动指定。
- * 而该类型则需要使用[java.lang.Object]/[kotlin.Any]顶层类代替。
- *
- * ```
- * @OnBefore("exampleMethod")
- * fun exampleMethodBefore(
- *     params: XC_MethodHook.MethodHookParam,
- *     @Param("com.sample.User") user:Any?  //user!!.javaClass == com.sample.User (Mandatory type)
- *     @Param arg1:Any?  //arg1!!.javaClass == Any (Any type)
- *     @Param("java.lang.Object") arg2:Any?  //arg2!!.javaClass == java.lang.Object/kotlin.Any (Mandatory type)
- * ){
- *     hookBlockRunning(params){
- *         //some logic..
- *     }.onFailure {
- *         XplerLog.tagE(TAG, it)
- *    }
- * }
- * ```
- *
- * @param name 应该是一个完整的类名, 如: com.sample.User；
- *             允许为 `"null"` 或 `""` 字符串，将模糊匹配任意类型。
- */
-@Target(AnnotationTarget.VALUE_PARAMETER)
-annotation class Param(val name: String = "null")
-
-/**
- * [Param]的衍生类，对于处理某些情况下原始类型本身是[java.lang.Object]/[kotlin.Any]的情况。
- *
- * [KeepParam]出现的原因见 [HookEntity.getTargetMethodParamTypesOnlyAnnotations] 的解释。
- *
- * 实际上它只是为了给注解二维数组占位，并未有任何实际意义。
- *
- * 或者只要你愿意，可以为每一个原始类型这样注解：
- * ```
- * @OnBefore
- * fun test(
- *      //@KeepParam any: Any?, //与下一行目的相同
- *      @Param("java.lang.Object") any: Any?,
- *      @Param("com.test.User") user: Any?,
- * ){
- *      //hook logic
- * }
- * ```
- */
-@Target(AnnotationTarget.VALUE_PARAMETER)
-annotation class KeepParam()
-
-/**
- * 目标类的某个方法类型，精确匹配用得上。
- *
- * 数组类型见: [Class.getName]
- *
- * @param name 类型字符串，应该是一个全类名
- */
-@Target(AnnotationTarget.FUNCTION)
-annotation class ReturnType(val name: String = "")
-
-/**
- * 一次性的Hook注解。
- *
- * 需要搭配 [OnBefore]、[OnAfter]、[OnReplace]、[OnConstructorBefore]、[OnConstructorAfter]、[OnConstructorReplace] 使用。
- *
- * 被该标注的某个逻辑方法会在执行一次Hook后立即解开。
- */
-@Target(AnnotationTarget.FUNCTION)
-annotation class HookOnce()
-
-/**
  * HookEntity 实体类，提供对某个Hook目标类的便捷操作
  */
 abstract class HookEntity(
@@ -187,8 +54,8 @@ abstract class HookEntity(
                 invOnConstructorAfter()
                 invOnConstructorReplace()
 
-                defaultHookAllMethod()
-                defaultHookAllConstructor()
+                hookTargetAllMethod()
+                hookTargetAllConstructor()
             }
 
             this.onInit()
@@ -232,7 +99,7 @@ abstract class HookEntity(
     }
 
     /**
-     * 获取泛型子类的所有方法
+     * 获取子类的所有方法
      */
     private fun getMineAllMethods() {
         mineMethods.addAll(this::class.java.declaredMethods)
@@ -589,7 +456,7 @@ abstract class HookEntity(
     /**
      * 勾住所有普通方法
      */
-    private fun defaultHookAllMethod() {
+    private fun hookTargetAllMethod() {
         // 所有普通方法
         if (this@HookEntity is CallMethods) {
             hookHelper?.methodAll {
@@ -607,7 +474,7 @@ abstract class HookEntity(
     /**
      * 勾住所有构造方法
      */
-    private fun defaultHookAllConstructor() {
+    private fun hookTargetAllConstructor() {
         // 所有构造方法
         if (this@HookEntity is CallConstructors) {
             hookHelper?.constructorAll {
@@ -627,9 +494,136 @@ abstract class HookEntity(
         val key: T,
     )
 
-    private data class Wrapper<T, V>(
-        val identify: String,
-        val key: T,
-        val value: V,
-    )
+    /**
+     * 对于目标类某个普通方法的挂勾，等价于 [XC_MethodHook.beforeHookedMethod]。
+     *
+     * 被标注的方法第一个参数需要是 [XC_MethodHook.MethodHookParam]，其后才是原方法参数列表；
+     * 若某个方法中的参数类型无法直接被引用，可参考使用 [Param] 注解直接指定。
+     *
+     * @param name Hook目标方法名
+     *
+     */
+    @Target(AnnotationTarget.FUNCTION)
+    protected annotation class OnBefore(vararg val name: String)
+
+    /**
+     * 对于目标类某个普通方法的挂勾，等价于 [XC_MethodHook.afterHookedMethod]。
+     *
+     * 被标注的方法第一个参数需要是 [XC_MethodHook.MethodHookParam]，其后才是原方法参数列表；
+     * 若某个方法中的参数类型无法直接被引用，可参考使用 [Param] 注解直接指定。
+     *
+     * @param name Hook目标方法名
+     *
+     */
+    @Target(AnnotationTarget.FUNCTION)
+    protected annotation class OnAfter(vararg val name: String)
+
+    /**
+     * 对于目标类某个普通方法的挂勾，等价于 [XC_MethodReplacement.replaceHookedMethod]。
+     *
+     * 被标注的方法第一个参数需要是 [XC_MethodHook.MethodHookParam]，其后才是原方法参数列表；
+     * 若某个方法中的参数类型无法直接被引用，可参考使用 [Param] 注解直接指定。
+     *
+     * @param name Hook目标方法名
+     *
+     */
+    @Target(AnnotationTarget.FUNCTION)
+    protected annotation class OnReplace(vararg val name: String)
+
+    /**
+     * 对于目标类某个构造方法的挂勾，等价于 [XC_MethodHook.beforeHookedMethod]。
+     *
+     * 被标注的方法第一个参数需要是 [XC_MethodHook.MethodHookParam]，其后才是原方法参数列表；
+     * 若某个方法中的参数类型无法直接被引用，可参考使用 [Param] 注解直接指定。
+     */
+    @Target(AnnotationTarget.FUNCTION)
+    protected annotation class OnConstructorBefore
+
+    /**
+     * 对于目标类某个构造方法的挂勾，等价于 [XC_MethodHook.afterHookedMethod]。
+     *
+     * 被标注的方法第一个参数需要是 [XC_MethodHook.MethodHookParam]，其后才是原方法参数列表；
+     * 若某个方法中的参数类型无法直接被引用，可参考使用 [Param] 注解直接指定。
+     */
+    @Target(AnnotationTarget.FUNCTION)
+    protected annotation class OnConstructorAfter
+
+    /**
+     * 对于目标类某个构造方法的挂勾，等价于 [XC_MethodReplacement.replaceHookedMethod]。
+     *
+     * 被标注的方法第一个参数需要是 [XC_MethodHook.MethodHookParam]，其后才是原方法参数列表；
+     * 若某个方法中的参数类型无法直接被引用，可参考使用 [Param] 注解直接指定。
+     */
+    @Target(AnnotationTarget.FUNCTION)
+    protected annotation class OnConstructorReplace
+
+    /**
+     * 对于目标方法中出现的不确定参数类型，默认模糊匹配。
+     *
+     * 若某个参数属于宿主如：`com.sample.User`，书写时无法直接通过`import`引入，可使用该注解手动指定。
+     * 而该类型则需要使用[java.lang.Object]/[kotlin.Any]顶层类代替。
+     *
+     * ```
+     * @OnBefore("exampleMethod")
+     * fun exampleMethodBefore(
+     *     params: XC_MethodHook.MethodHookParam,
+     *     @Param("com.sample.User") user:Any?  //user!!.javaClass == com.sample.User (Mandatory type)
+     *     @Param arg1:Any?  //arg1!!.javaClass == Any (Any type)
+     *     @Param("java.lang.Object") arg2:Any?  //arg2!!.javaClass == java.lang.Object/kotlin.Any (Mandatory type)
+     * ){
+     *     hookBlockRunning(params){
+     *         //some logic..
+     *     }.onFailure {
+     *         XplerLog.tagE(TAG, it)
+     *    }
+     * }
+     * ```
+     *
+     * @param name 应该是一个完整的类名, 如: com.sample.User；
+     *             允许为 `"null"` 或 `""` 字符串，将模糊匹配任意类型。
+     */
+    @Target(AnnotationTarget.VALUE_PARAMETER)
+    protected annotation class Param(val name: String = "null")
+
+    /**
+     * [Param]的衍生类，对于处理某些情况下原始类型本身是[java.lang.Object]/[kotlin.Any]的情况。
+     *
+     * [KeepParam]出现的原因见 [HookEntity.getTargetMethodParamTypesOnlyAnnotations] 的解释。
+     *
+     * 实际上它只是为了给注解二维数组占位，并未有任何实际意义。
+     *
+     * 或者只要你愿意，可以为每一个原始类型这样注解：
+     * ```
+     * @OnBefore
+     * fun test(
+     *      //@KeepParam any: Any?, //与下一行目的相同
+     *      @Param("java.lang.Object") any: Any?,
+     *      @Param("com.test.User") user: Any?,
+     * ){
+     *      //hook logic
+     * }
+     * ```
+     */
+    @Target(AnnotationTarget.VALUE_PARAMETER)
+    protected annotation class KeepParam
+
+    /**
+     * 目标类的某个方法类型，精确匹配用得上。
+     *
+     * 数组类型见: [Class.getName]
+     *
+     * @param name 类型字符串，应该是一个全类名
+     */
+    @Target(AnnotationTarget.FUNCTION)
+    protected annotation class ReturnType(val name: String = "")
+
+    /**
+     * 一次性的Hook注解。
+     *
+     * 需要搭配 [OnBefore]、[OnAfter]、[OnReplace]、[OnConstructorBefore]、[OnConstructorAfter]、[OnConstructorReplace] 使用。
+     *
+     * 被该标注的某个逻辑方法会在执行一次Hook后立即解开。
+     */
+    @Target(AnnotationTarget.FUNCTION)
+    protected annotation class HookOnce
 }

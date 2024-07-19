@@ -185,9 +185,10 @@ inline fun Class<*>.hookConstructor(
 
 /**
  * Hook某个Class的所有构造方法
+ *
  * @param block hook代码块, 可在内部书写hook逻辑
  */
-inline fun Class<*>.hookConstructorsAll(
+inline fun Class<*>.hookConstructorAll(
     block: MethodHook.() -> Unit,
 ) {
     val constructors = this.declaredConstructors
@@ -211,7 +212,7 @@ inline fun Class<*>.hookMethod(
     vararg argsTypes: Any,
     block: MethodHook.() -> Unit,
 ) {
-    val impl = MethodHookImpl(this, methodName, argsTypes)
+    val impl = MethodHookImpl(this, methodName, *argsTypes)
     block.invoke(impl)
     impl.startHook()
 }

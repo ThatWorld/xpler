@@ -77,7 +77,7 @@ class XplerLog {
 
             // 输出到Xposed
             if (xposed) {
-                XposedBridge.log("$tag: $it")
+                XposedBridge.log("[$tag]: $it")
             }
         }
         // 底部边框
