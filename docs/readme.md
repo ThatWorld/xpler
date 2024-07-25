@@ -1,22 +1,18 @@
 # Xpler
 
-
-
 Xposed Kotlin 开发模板，更适合Kotlin编码风格。
-
-将本项目作为 `module` 引入项目，然后正常Xposed编写流程操作即可。
 
 `Xpler` 在原 `Xposed Api` 基础上进一步封装，使其支持Kotlin的DSL特性，更简洁的编写Hook逻辑。
 
 注意：使用本模板，你仍需要手动创建和配置 `xposed_init`、`application meta-data`。
 
-
-
 ## Xpler Api
 
-作为原 `Xposed Api` 的封装项目，`Xpler` 提供了部分基本Api。
+作为原 `Xposed Api` 的封装项目，`Xpler` 提供了部分基本Api。[![xpler](https://img.shields.io/github/v/release/ThatWorld/xpler)](https://central.sonatype.com/artifact/io.github.thatworld/xpler)
 
-
+```txt
+implementation("io.github.thatworld:xpler:<version>")
+```
 
 ### HookEntrance.kt
 
@@ -53,8 +49,6 @@ Xposed Kotlin 开发模板，更适合Kotlin编码风格。
 
   而如果，你只是需要一个简单的Hook，并不需要复杂操作，可以试试 `DefaultHookStart` 接口。
 
-  
-
 - DefaultHookStart
 
   ```kotlin
@@ -70,8 +64,6 @@ Xposed Kotlin 开发模板，更适合Kotlin编码风格。
 
   该接口提供的 `loadPackage` 方法就是原始的 `handleLoadPackage` 操作。
 
-
-
 > 记得修改`xposed_init` 中的入口类，如上述的入口类名为：`com.example.module.HookInit`。
 >
 > 还有，如果有混淆优化，记得保留 `HookInit` 入口类。
@@ -81,13 +73,9 @@ Xposed Kotlin 开发模板，更适合Kotlin编码风格。
 > -keep class com.example.module.HookInit
 > ```
 
-
-
 ### HookState.kt
 
 该类汇总了框架状态，如果你想要判断模块是否生效、框架类型，可使用该类。
-
-
 
 ### KtXposedHelpers.kt
 
@@ -173,8 +161,6 @@ Xposed Kotlin 开发模板，更适合Kotlin编码风格。
 
   `onUnhook{hookMethod, callback -> ..}` 属于选写(可写/可不写)方法，当它被书写之后，该Hook 方法都会在执行一次之后被立即解开(即Hook逻辑至少被执行一次)；或许你并未在 `onUnhook` 作用域内书写任何代码，但只要它出现了都会立即解开Hook，而 `KtXposedHelpers` 为 `onUnhook` 提供的作用域只是为了善后处理，仅此而已。
 
-  
-
 - `KtXposedHelpers` 的其他操作：
 
   获取模块中的Layout：
@@ -191,11 +177,9 @@ Xposed Kotlin 开发模板，更适合Kotlin编码风格。
 
   更多：`getString`、`getColor`、`getAnimation`  等，请自行阅读方法注释。
 
-
-
 ### KtXposedMore.kt
 
-得益于Kotlin的扩展特性，`Xpler `在部分类型的基础上增加系列扩展，以下是常用Api示例：
+得益于Kotlin的扩展特性，`Xpler`在部分类型的基础上增加系列扩展，以下是常用Api示例：
 
 - 对  `XC_LoadPackage.LoadPackageParam` 类增加的扩展：
 
@@ -225,17 +209,13 @@ Xposed Kotlin 开发模板，更适合Kotlin编码风格。
   val moduleDrawable = context.getModuleDrawable(R.drawable.module_background)
   ```
 
-- 对 `Any `增加 `lpparam` 的扩展，可在任意对象中直接使用 `lpparam` 实例。
+- 对 `Any`增加 `lpparam` 的扩展，可在任意对象中直接使用 `lpparam` 实例。
 
 - 其他扩展，请自行阅读方法注释。
-
-
 
 ### XplerLog.kt
 
 在模块开发中更具通俗的Log工具类，与Log类的调用基本一致，支持LogCat面板等级输出日志。
-
-
 
 ### HookEntity.kt
 
@@ -319,8 +299,6 @@ class HMainActivity : HookEntity(){
 
 和前文一样 `Xpler` 提供的时机注解 `@..Before`、`@..After`、`@..Replace`，中的 `@..Replace` 仍然会替换对应目标方法的逻辑，而这时对于 `@..Before`、`@..After` 则不会生效。
 
-
-
 ## Live Template
 
 当大量的模板代码在代码中重复出现时，你可以很好的运用 Android Studio 的  `Live Template` 来快速生成它们的基础代码。
@@ -329,12 +307,6 @@ class HMainActivity : HookEntity(){
 
 ![xpler_live_template](images/xpler_live_template.png)
 
-
-
 你可以下载  [xpler-templates.zip](https://github.com/GangJust/xpler/tree/master/docs/assets)，然后通过 Android Studio 菜单： File -> Manage IDE Settings ->  Import Settings 导入该 `Live Template` 模板代码。
-
-
-
-
 
 > Xpler 在 [FreedomPlus](https://github.com/GangJust/FreedomPlus) 中被很好的实践运用，如果你想要更多示例，请点击 [这里](https://github.com/GangJust/FreedomPlus/tree/master/core/src/main/java/io/github/fplus/core/hook)。
