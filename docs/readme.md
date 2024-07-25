@@ -8,7 +8,9 @@ Xposed Kotlin 开发模板，更适合Kotlin编码风格。
 
 ## Xpler Api
 
-作为原 `Xposed Api` 的封装项目，`Xpler` 提供了部分基本Api。[![xpler](https://img.shields.io/github/v/release/ThatWorld/xpler)](https://central.sonatype.com/artifact/io.github.thatworld/xpler)
+作为原 `Xposed Api` 的封装项目，`Xpler` 提供了部分基本Api。
+
+[![xpler](https://img.shields.io/github/v/release/ThatWorld/xpler?display_name=release)](https://central.sonatype.com/artifact/io.github.thatworld/xpler)
 
 ```txt
 implementation("io.github.thatworld:xpler:<version>")
