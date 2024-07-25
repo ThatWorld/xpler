@@ -1,7 +1,10 @@
+import com.vanniktech.maven.publish.SonatypeHost
+
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
-    id("maven-publish")
+    id("com.vanniktech.maven.publish") version "0.29.0"
+    id("signing")
 }
 
 android {
@@ -28,12 +31,6 @@ android {
     kotlinOptions {
         jvmTarget = "1.8"
     }
-
-    publishing {
-        singleVariant("release") {
-            withSourcesJar()
-        }
-    }
 }
 
 dependencies {
@@ -42,21 +39,30 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.1.0")
 }
 
-afterEvaluate {
-    publishing {
-        publications {
-            create<MavenPublication>("maven") {
-                groupId = "io.github.xpler"
-                artifactId = "xpler"
-                version = "1.0.0"
-
-                from(components["release"])
+mavenPublishing {
+    coordinates("io.github.thatworld", "xpler", "0.0.1")
+    pom {
+        name.set("xpler")
+        description.set("Xpler is a library for Xposed")
+        url.set("https://github.com/ThatWorld/xpler")
+        licenses {
+            license {
+                name.set("The Apache Software License, Version 2.0")
+                url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
             }
         }
-
-        repositories {
-            mavenLocal()
+        developers {
+            developer {
+                name.set("Gang")
+                url.set("https://github.com/ThatWorld/xpler")
+            }
+        }
+        scm {
+            connection.set("scm:git:git://github.com/ThatWorld/xpler.git")
+            developerConnection.set("scm:git:ssh://github.com/ThatWorld/xpler.git")
+            url.set("https://github.com/ThatWorld/xpler.git")
         }
     }
+    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
+    signAllPublications()
 }
-
