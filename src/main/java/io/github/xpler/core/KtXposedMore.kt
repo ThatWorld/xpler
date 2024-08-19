@@ -75,7 +75,7 @@ inline fun <reified T> Any.callMethod(methodName: String, vararg args: Any?): T?
  * @param args 参数列表值 (需要与[argsTypes]类型一一对应)
  * @return 该方法被调用之后的返回值, 可能是 null 即没有返回值
  */
-inline fun <reified T> Any.callMethod(methodName: String, argsTypes: Array<Class<*>>, vararg args: Any): T? {
+inline fun <reified T> Any.callMethod(methodName: String, argsTypes: Array<Class<*>>, vararg args: Any?): T? {
     return XposedHelpers.callMethod(this, methodName, argsTypes, *args) as T?
 }
 
@@ -95,7 +95,7 @@ inline fun <reified T> Any.getObjectField(fieldName: String): T? {
  * @param fieldName 字段名
  * @param value 字段值
  */
-inline fun <reified T> T.setObjectField(fieldName: String, value: Any) {
+inline fun <reified T> T.setObjectField(fieldName: String, value: Any?) {
     XposedHelpers.setObjectField(this, fieldName, value)
 }
 
@@ -141,7 +141,7 @@ inline fun <reified T> Class<*>.getStaticObjectField(fieldName: String): T? {
  * @param methodName 方法名
  * @return 该方法被调用之后的返回值, 可能是 null 即没有返回值
  */
-inline fun <reified T> Class<*>.callStaticMethod(methodName: String, vararg args: Any): T? {
+inline fun <reified T> Class<*>.callStaticMethod(methodName: String, vararg args: Any?): T? {
     val method = XposedHelpers.findMethodBestMatch(this, methodName, *XposedHelpers.getParameterTypes(*args))
     return XposedBridge.invokeOriginalMethod(method, null, args) as T?
 }
@@ -154,7 +154,7 @@ inline fun <reified T> Class<*>.callStaticMethod(methodName: String, vararg args
  * @param args 参数列表值 (需要与[argsTypes]类型一一对应)
  * @return 该方法被调用之后的返回值, 可能是 null 即没有返回值
  */
-inline fun <reified T> Class<*>.callStaticMethod(methodName: String, argsTypes: Array<Class<*>>, vararg args: Any): T? {
+inline fun <reified T> Class<*>.callStaticMethod(methodName: String, argsTypes: Array<Class<*>>, vararg args: Any?): T? {
     val method = XposedHelpers.findMethodBestMatch(this, methodName, *argsTypes)
     return XposedBridge.invokeOriginalMethod(method, null, args) as T?
 }
@@ -399,20 +399,6 @@ fun XC_LoadPackage.LoadPackageParam.findClass(
  */
 fun Any.dumpStackLog() {
     XplerLog.d(Log.getStackTraceString(Throwable("Stack trace")))
-}
-
-/**
- * 直接设置返回值为Void
- */
-fun XC_MethodHook.MethodHookParam.resultVoid(): Unit {
-    result = Void.TYPE
-}
-
-/**
- * 设置返回内容
- */
-fun XC_MethodHook.MethodHookParam.result(any: Any?): Unit {
-    result = any
 }
 
 /**
