@@ -40,7 +40,7 @@ dependencies {
 }
 
 mavenPublishing {
-    coordinates("io.github.thatworld", "xpler", "0.0.1")
+    coordinates("io.github.thatworld", "xpler", "0.0.2")
     pom {
         name.set("xpler")
         description.set("Xpler is a library for Xposed")

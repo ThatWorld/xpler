@@ -6,16 +6,15 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.util.Base64
-import androidx.annotation.Keep
 import io.github.xpler.utils.XplerUtils
 import org.json.JSONObject
 
-object HookState {
+object XplerState {
 
     /**
      * 判断模块是否可用。
      *
-     * see at: [io.github.xpler.HookEntrance.initModule]
+     * see at: [io.github.xpler.XplerEntrance.initModule]
      *
      */
     val isEnabled: Boolean
@@ -26,7 +25,7 @@ object HookState {
      *
      * 通过反射 XposedBridge.TAG 来获取框架类型。
      *
-     * see at: [io.github.xpler.HookEntrance.initModule]
+     * see at: [io.github.xpler.XplerEntrance.initModule]
      */
     val framework: String
         get() = "Unknown"

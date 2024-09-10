@@ -1,12 +1,12 @@
-package io.github.xpler.core.wrapper
+package io.github.xpler.core.entrance
 
 import android.app.Application
-import de.robv.android.xposed.callbacks.XC_LoadPackage
+import io.github.xpler.core.proxy.LoadParam
 
 /**
  * 需要宿主Application时的Hook
  *
- * see at: [io.github.xpler.HookEntrance.applicationHookStart]
+ * see at: [io.github.xpler.XplerEntrance.applicationHookStart]
  */
 interface ApplicationHookStart : HookStart {
     /**
@@ -20,7 +20,7 @@ interface ApplicationHookStart : HookStart {
      * 不要在 [onCreateBefore]、[onCreateAfter] 中书写或调用相同的Hook逻辑, 毫无意义。
      */
     fun onCreateBefore(
-        lp: XC_LoadPackage.LoadPackageParam,
+        lparam: LoadParam,
         hostApp: Application,
     )
 
@@ -30,7 +30,7 @@ interface ApplicationHookStart : HookStart {
      * 不要在 [onCreateBefore]、[onCreateAfter] 中书写或调用相同的Hook逻辑, 毫无意义。
      */
     fun onCreateAfter(
-        lp: XC_LoadPackage.LoadPackageParam,
+        lparam: LoadParam,
         hostApp: Application,
     )
 

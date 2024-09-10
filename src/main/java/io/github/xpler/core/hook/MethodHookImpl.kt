@@ -1,13 +1,10 @@
-package io.github.xpler.core.impl
+package io.github.xpler.core.hook
 
 import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.XposedHelpers
-import io.github.xpler.core.log.XplerLog
-import io.github.xpler.core.wrapper.MethodHook
-import io.github.xpler.core.wrapper.OnAfterBlock
-import io.github.xpler.core.wrapper.OnBeforeBlock
-import io.github.xpler.core.wrapper.OnReplaceBlock
-import io.github.xpler.core.wrapper.OnUnhookBlock
+import io.github.xpler.core.XplerLog
+import io.github.xpler.core.callback.MethodHookCallbackImpl
+import io.github.xpler.core.callback.MethodReplacementCallbackImpl
 import java.lang.reflect.Member
 import java.lang.reflect.Modifier
 
@@ -21,21 +18,17 @@ open class MethodHookImpl(private var method: Member) : MethodHook {
     constructor(clazz: Class<*>, methodName: String, vararg argsTypes: Any) :
             this(XposedHelpers.findMethodExact(clazz, methodName, *argsTypes))
 
-
     override fun onBefore(block: OnBeforeBlock) {
         this.beforeBlock = block
     }
-
 
     override fun onAfter(block: OnAfterBlock) {
         this.afterBlock = block
     }
 
-
     override fun onReplace(block: OnReplaceBlock) {
         this.replaceBlock = block
     }
-
 
     override fun onUnhook(block: OnUnhookBlock) {
         this.unHookBlock = block

@@ -3,14 +3,12 @@ package io.github.xpler.core.entity
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XC_MethodReplacement
 import de.robv.android.xposed.XposedHelpers
-import de.robv.android.xposed.callbacks.XC_LoadPackage
-import io.github.xpler.core.KtXposedHelpers
-import io.github.xpler.core.argsOrEmpty
-import io.github.xpler.core.impl.ConstructorHookImpl
-import io.github.xpler.core.impl.MethodHookImpl
-import io.github.xpler.core.log.XplerLog
-import io.github.xpler.core.wrapper.CallConstructors
-import io.github.xpler.core.wrapper.CallMethods
+import io.github.xpler.core.XplerHelper
+import io.github.xpler.core.XplerLog
+import io.github.xpler.core.proxy.LoadParam
+import io.github.xpler.core.hook.ConstructorHookImpl
+import io.github.xpler.core.hook.MethodHookImpl
+import io.github.xpler.core.proxy.MethodParam
 import io.github.xpler.utils.XplerUtils
 import java.lang.reflect.Method
 
@@ -20,12 +18,12 @@ import java.lang.reflect.Method
  * HookEntity 实体类，提供对某个Hook目标类的便捷操作
  */
 abstract class HookEntity(
-    protected val lpparam: XC_LoadPackage.LoadPackageParam = KtXposedHelpers.lpparam,
+    protected val param: LoadParam = XplerHelper.lparam,
 ) {
     private lateinit var mTargetClass: Class<*>
     private val targetMethods = mutableSetOf<Method>()
 
-    private var hookHelper: KtXposedHelpers? = null
+    private var helper: XplerHelper? = null
     private val mineMethods = mutableSetOf<Method>()
 
     init {
@@ -41,7 +39,7 @@ abstract class HookEntity(
                 if (targetClass == Any::class.java)
                     throw ClassFormatError("Please override the `setTargetClass()` to specify the hook target class!")
 
-                hookHelper = KtXposedHelpers.hookClass(targetClass)
+                helper = XplerHelper.hookClass(targetClass)
 
                 getMineAllMethods()
                 getHookTargetAllMethods()
@@ -84,9 +82,9 @@ abstract class HookEntity(
      */
     open fun findClass(className: String, classLoader: ClassLoader? = null): Class<*> {
         return try {
-            XposedHelpers.findClass(simpleName(className), classLoader ?: lpparam.classLoader)
+            XposedHelpers.findClass(simpleName(className), classLoader ?: param.classLoader)
         } catch (e: Exception) {
-            XplerLog.tagE(this.javaClass.simpleName, e)
+            XplerLog.e(e)
             NoneHook::class.java
         }
     }
@@ -185,12 +183,12 @@ abstract class HookEntity(
                         val invArgs = if (paramTypes.isEmpty()) {
                             arrayOf(this) // 如果只提供了方法名、返回值类型
                         } else {
-                            arrayOf(this, *argsOrEmpty)
+                            arrayOf(this, *args)
                         }
                         value.invoke(this@HookEntity, *invArgs)
                     }
                     if (value.getAnnotation(HookOnce::class.java) != null) {
-                        onUnhook { _, _ -> }
+                        onUnhook { unhook() }
                     }
                 }.startHook()
             }
@@ -218,12 +216,12 @@ abstract class HookEntity(
                         val invArgs = if (paramTypes.isEmpty()) {
                             arrayOf(this) // 如果只提供了方法名、返回值类型
                         } else {
-                            arrayOf(this, *argsOrEmpty)
+                            arrayOf(this, *args)
                         }
                         value.invoke(this@HookEntity, *invArgs)
                     }
                     if (value.getAnnotation(HookOnce::class.java) != null) {
-                        onUnhook { _, _ -> }
+                        onUnhook { unhook() }
                     }
                 }.startHook()
             }
@@ -252,12 +250,12 @@ abstract class HookEntity(
                         val invArgs = if (paramTypes.isEmpty()) {
                             arrayOf(this) // 如果只提供了方法名、返回值类型
                         } else {
-                            arrayOf(this, *argsOrEmpty)
+                            arrayOf(this, *args)
                         }
                         value.invoke(this@HookEntity, *invArgs) ?: Unit
                     }
                     if (value.getAnnotation(HookOnce::class.java) != null) {
-                        onUnhook { _, _ -> }
+                        onUnhook { unhook() }
                     }
                 }.startHook()
             }
@@ -278,11 +276,11 @@ abstract class HookEntity(
             ConstructorHookImpl(targetClass, *normalParamTypes)
                 .apply {
                     onBefore {
-                        val invArgs = arrayOf(this, *argsOrEmpty)
+                        val invArgs = arrayOf(this, *args)
                         value.invoke(this@HookEntity, *invArgs)
                     }
                     if (value.getAnnotation(HookOnce::class.java) != null) {
-                        onUnhook { _, _ -> }
+                        onUnhook { unhook() }
                     }
                 }.startHook()
         }
@@ -302,11 +300,11 @@ abstract class HookEntity(
             ConstructorHookImpl(targetClass, *normalParamTypes)
                 .apply {
                     onAfter {
-                        val invArgs = arrayOf(this, *argsOrEmpty)
+                        val invArgs = arrayOf(this, *args)
                         value.invoke(this@HookEntity, *invArgs)
                     }
                     if (value.getAnnotation(HookOnce::class.java) != null) {
-                        onUnhook { _, _ -> }
+                        onUnhook { unhook() }
                     }
                 }.startHook()
         }
@@ -324,12 +322,12 @@ abstract class HookEntity(
             ConstructorHookImpl(targetClass, *normalParamTypes)
                 .apply {
                     onReplace {
-                        val invArgs = arrayOf(this, *argsOrEmpty)
+                        val invArgs = arrayOf(this, *args)
                         value.invoke(this@HookEntity, *invArgs)
                         thisObject
                     }
                     if (value.getAnnotation(HookOnce::class.java) != null) {
-                        onUnhook { _, _ -> }
+                        onUnhook { unhook() }
                     }
                 }.startHook()
         }
@@ -350,8 +348,8 @@ abstract class HookEntity(
             if (mineParamsTypes.isEmpty()) {
                 throw IllegalArgumentException("parameterTypes empty.")
             }
-            if (mineParamsTypes.first() != XC_MethodHook.MethodHookParam::class.java) {
-                throw IllegalArgumentException("parameterTypes[0] must be `XC_MethodHook.MethodHookParam`.")
+            if (mineParamsTypes.first() != MethodParam::class.java) {
+                throw IllegalArgumentException("parameterTypes[0] must be `MethodParam`.")
             }
 
             map[IdentifyKey("$method", annotation)] = method
@@ -393,7 +391,7 @@ abstract class HookEntity(
         parameterAnnotations: Array<Array<Annotation>>,
         parameterTypes: Array<Class<*>>
     ): Array<Class<*>?> {
-        // 整理参数, 将第一个参数`XC_MethodHook.MethodHookParam`移除
+        // 整理参数, 将第一个参数`MethodParam`移除
         val paramTypes = parameterTypes.toMutableList().apply { removeFirst() }
 
         var index = 0
@@ -418,7 +416,7 @@ abstract class HookEntity(
         parameterAnnotations: Array<Array<Annotation>>,
         parameterTypes: Array<Class<*>?>
     ): Array<Class<*>?> {
-        // 整理参数、参数注解列表, 将第一个参数`XC_MethodHook.MethodHookParam`移除
+        // 整理参数、参数注解列表, 将第一个参数`MethodParam`移除
         val paramAnnotations = parameterAnnotations.toMutableList().apply { removeFirst() }
         val paramTypes = parameterTypes.toMutableList().apply { removeFirst() }
 
@@ -447,7 +445,7 @@ abstract class HookEntity(
 
         //
         return try {
-            XposedHelpers.findClass(optName, classLoader ?: lpparam.classLoader)
+            XposedHelpers.findClass(optName, classLoader ?: param.classLoader)
         } catch (e: Exception) {
             return null
         }
@@ -459,7 +457,7 @@ abstract class HookEntity(
     private fun hookTargetAllMethod() {
         // 所有普通方法
         if (this@HookEntity is CallMethods) {
-            hookHelper?.methodAll {
+            helper?.methodAll {
                 onBefore {
                     callOnBeforeMethods(this)
                 }
@@ -477,7 +475,7 @@ abstract class HookEntity(
     private fun hookTargetAllConstructor() {
         // 所有构造方法
         if (this@HookEntity is CallConstructors) {
-            hookHelper?.constructorAll {
+            helper?.constructorAll {
                 onBefore {
                     callOnBeforeConstructors(this)
                 }
@@ -497,7 +495,7 @@ abstract class HookEntity(
     /**
      * 对于目标类某个普通方法的挂勾，等价于 [XC_MethodHook.beforeHookedMethod]。
      *
-     * 被标注的方法第一个参数需要是 [XC_MethodHook.MethodHookParam]，其后才是原方法参数列表；
+     * 被标注的方法第一个参数需要是 [MethodParam]，其后才是原方法参数列表；
      * 若某个方法中的参数类型无法直接被引用，可参考使用 [Param] 注解直接指定。
      *
      * @param name Hook目标方法名
@@ -509,7 +507,7 @@ abstract class HookEntity(
     /**
      * 对于目标类某个普通方法的挂勾，等价于 [XC_MethodHook.afterHookedMethod]。
      *
-     * 被标注的方法第一个参数需要是 [XC_MethodHook.MethodHookParam]，其后才是原方法参数列表；
+     * 被标注的方法第一个参数需要是 [MethodParam]，其后才是原方法参数列表；
      * 若某个方法中的参数类型无法直接被引用，可参考使用 [Param] 注解直接指定。
      *
      * @param name Hook目标方法名
@@ -521,7 +519,7 @@ abstract class HookEntity(
     /**
      * 对于目标类某个普通方法的挂勾，等价于 [XC_MethodReplacement.replaceHookedMethod]。
      *
-     * 被标注的方法第一个参数需要是 [XC_MethodHook.MethodHookParam]，其后才是原方法参数列表；
+     * 被标注的方法第一个参数需要是 [MethodParam]，其后才是原方法参数列表；
      * 若某个方法中的参数类型无法直接被引用，可参考使用 [Param] 注解直接指定。
      *
      * @param name Hook目标方法名
@@ -533,7 +531,7 @@ abstract class HookEntity(
     /**
      * 对于目标类某个构造方法的挂勾，等价于 [XC_MethodHook.beforeHookedMethod]。
      *
-     * 被标注的方法第一个参数需要是 [XC_MethodHook.MethodHookParam]，其后才是原方法参数列表；
+     * 被标注的方法第一个参数需要是 [MethodParam]，其后才是原方法参数列表；
      * 若某个方法中的参数类型无法直接被引用，可参考使用 [Param] 注解直接指定。
      */
     @Target(AnnotationTarget.FUNCTION)
@@ -542,7 +540,7 @@ abstract class HookEntity(
     /**
      * 对于目标类某个构造方法的挂勾，等价于 [XC_MethodHook.afterHookedMethod]。
      *
-     * 被标注的方法第一个参数需要是 [XC_MethodHook.MethodHookParam]，其后才是原方法参数列表；
+     * 被标注的方法第一个参数需要是 [MethodParam]，其后才是原方法参数列表；
      * 若某个方法中的参数类型无法直接被引用，可参考使用 [Param] 注解直接指定。
      */
     @Target(AnnotationTarget.FUNCTION)
@@ -551,7 +549,7 @@ abstract class HookEntity(
     /**
      * 对于目标类某个构造方法的挂勾，等价于 [XC_MethodReplacement.replaceHookedMethod]。
      *
-     * 被标注的方法第一个参数需要是 [XC_MethodHook.MethodHookParam]，其后才是原方法参数列表；
+     * 被标注的方法第一个参数需要是 [MethodParam]，其后才是原方法参数列表；
      * 若某个方法中的参数类型无法直接被引用，可参考使用 [Param] 注解直接指定。
      */
     @Target(AnnotationTarget.FUNCTION)
@@ -566,7 +564,7 @@ abstract class HookEntity(
      * ```
      * @OnBefore("exampleMethod")
      * fun exampleMethodBefore(
-     *     params: XC_MethodHook.MethodHookParam,
+     *     params: MethodParam,
      *     @Param("com.sample.User") user:Any?  //user!!.javaClass == com.sample.User (Mandatory type)
      *     @Param arg1:Any?  //arg1!!.javaClass == Any (Any type)
      *     @Param("java.lang.Object") arg2:Any?  //arg2!!.javaClass == java.lang.Object/kotlin.Any (Mandatory type)
@@ -574,7 +572,7 @@ abstract class HookEntity(
      *     hookBlockRunning(params){
      *         //some logic..
      *     }.onFailure {
-     *         XplerLog.tagE(TAG, it)
+     *         XplerLog.e(it)
      *    }
      * }
      * ```

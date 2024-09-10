@@ -1,7 +1,19 @@
-package io.github.xpler.core.wrapper
+package io.github.xpler.core.hook
+
+import io.github.xpler.core.proxy.MethodParam
+import io.github.xpler.core.proxy.MethodUnhook
+
+/// 扩展方法
+typealias OnBeforeBlock = MethodParam.() -> Unit
+
+typealias OnAfterBlock = MethodParam.() -> Unit
+
+typealias OnReplaceBlock = MethodParam.() -> Any?
+
+typealias OnUnhookBlock = MethodUnhook.() -> Unit
 
 /// 对普通方法的 Hook 封装
-interface MethodHook : IHook {
+interface MethodHook {
 
     /**
      * [onBefore]会在某个Hook方法执行之前被调用，
