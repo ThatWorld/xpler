@@ -38,14 +38,12 @@ class LoadParam private constructor(
         }
 
     override fun toString(): String {
-        return JSONObject()
-            .apply {
-                putOpt("packageName", packageName)
-                putOpt("processName", processName)
-                putOpt("classLoader", "$classLoader")
-                putOpt("appInfo", "$appInfo")
-                putOpt("isFirstApplication", isFirstApplication)
-            }
-            .toString(2)
+        return JSONObject().apply {
+            putOpt("packageName", packageName)
+            putOpt("processName", processName)
+            putOpt("classLoader", "$classLoader")
+            putOpt("appInfo", "$appInfo")
+            putOpt("isFirstApplication", isFirstApplication)
+        }.toString(2)
     }
 }
