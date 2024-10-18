@@ -51,7 +51,6 @@ abstract class XplerEntrance : IXposedHookLoadPackage, IXposedHookZygoteInit {
         param.hookClass(XplerState::class.java)
             .method("isEnabled") {
                 onAfter {
-                    XplerLog.d("isEnabled")
                     setResult(true)
                 }
             }
