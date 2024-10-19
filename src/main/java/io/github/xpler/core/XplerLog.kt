@@ -18,6 +18,14 @@ object XplerLog {
         XposedBridge.log(msg)
     }
 
+    fun xposedLog(msg: String) {
+        XposedBridge.log(msg)
+    }
+
+    fun xposedLog(th: Throwable) {
+        XposedBridge.log(th)
+    }
+
     fun setTag(tag: String) {
         mTag = tag
     }
