@@ -392,7 +392,7 @@ abstract class HookEntity(
         parameterTypes: Array<Class<*>>
     ): Array<Class<*>?> {
         // 整理参数, 将第一个参数`MethodParam`移除
-        val paramTypes = parameterTypes.toMutableList().apply { removeFirst() }
+        val paramTypes = parameterTypes.toMutableList().apply { removeAt(0) }
 
         var index = 0
         return paramTypes.map { clazz ->
@@ -417,8 +417,8 @@ abstract class HookEntity(
         parameterTypes: Array<Class<*>?>
     ): Array<Class<*>?> {
         // 整理参数、参数注解列表, 将第一个参数`MethodParam`移除
-        val paramAnnotations = parameterAnnotations.toMutableList().apply { removeFirst() }
-        val paramTypes = parameterTypes.toMutableList().apply { removeFirst() }
+        val paramAnnotations = parameterAnnotations.toMutableList().apply { removeAt(0) }
+        val paramTypes = parameterTypes.toMutableList().apply { removeAt(0) }
 
         // 替换 @Param 指定的参数类型
         val finalParamTypes = paramTypes.mapIndexed { index, clazz ->
