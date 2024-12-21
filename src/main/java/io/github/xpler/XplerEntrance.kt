@@ -12,9 +12,9 @@ import io.github.xpler.core.entrance.ApplicationHookStart
 import io.github.xpler.core.entrance.DefaultHookStart
 import io.github.xpler.core.entrance.HookStart
 import io.github.xpler.core.hookClass
-import io.github.xpler.loader.injectClassLoader
 import io.github.xpler.core.proxy.LoadParam
 import io.github.xpler.core.thisApplication
+import io.github.xpler.loader.injectClassLoader
 
 // Hook init entrance
 abstract class XplerEntrance : IXposedHookLoadPackage, IXposedHookZygoteInit {
@@ -70,7 +70,7 @@ abstract class XplerEntrance : IXposedHookLoadPackage, IXposedHookZygoteInit {
                         } else if (bridgeTag.startsWith("Xposed")) {
                             "Xposed"
                         } else {
-                            "Unknown"
+                            bridgeTag
                         }
                     )
                 }
