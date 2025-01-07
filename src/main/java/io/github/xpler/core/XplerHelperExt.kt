@@ -36,14 +36,14 @@ fun LoadParam.hookClass(
 fun LoadParam.findClass(
     className: String,
     loader: ClassLoader? = null,
-): Class<*> {
+): Class<*>? {
     return XplerHelper.findClass(className, loader ?: classLoader)
 }
 
 fun LoadParam.findField(
     className: String,
     fieldName: String,
-): Field {
+): Field? {
     return XplerHelper.findField(className, fieldName)
 }
 
@@ -51,7 +51,7 @@ fun LoadParam.findMethod(
     className: String,
     methodName: String,
     vararg argsTypes: Class<*>,
-): Method {
+): Method? {
     return XplerHelper.findMethod(className, methodName, *argsTypes)
 }
 

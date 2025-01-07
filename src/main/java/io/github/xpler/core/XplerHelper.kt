@@ -216,7 +216,7 @@ class XplerHelper private constructor() {
         fun findClass(
             className: String,
             loader: ClassLoader? = lparam.classLoader,
-        ): Class<*> {
+        ): Class<*>? {
             return XposedHelpers.findClass(XplerUtils.simpleName(className), loader)
         }
 
@@ -229,7 +229,7 @@ class XplerHelper private constructor() {
         fun findField(
             className: String,
             fieldName: String,
-        ): Field {
+        ): Field? {
             return XposedHelpers.findField(findClass(className), fieldName)
         }
 
@@ -244,7 +244,7 @@ class XplerHelper private constructor() {
             className: String,
             methodName: String,
             vararg argsTypes: Class<*>,
-        ): Method {
+        ): Method? {
             return XposedHelpers.findMethodExact(findClass(className), methodName, *argsTypes)
         }
 
