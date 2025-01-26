@@ -61,27 +61,31 @@ class MethodParam private constructor(
     override fun toString(): String {
         return JSONObject().let { json ->
             json.putOpt("method", "$method")
-            json.putOpt("thisObj", JSONObject().let { obj ->
-                obj.putOpt("value", "$thisObject")
-                obj.putOpt("type", "${thisObject?.javaClass?.name}")
-            })
-            json.putOpt("args", JSONArray().let { arr ->
+            json.putOpt(
+                "thisObj", JSONObject()
+                    .putOpt("value", "$thisObject")
+                    .putOpt("type", "${thisObject?.javaClass?.name}")
+            )
+            json.putOpt("args", JSONArray().apply {
                 args.forEachIndexed { index, any ->
-                    arr.put(JSONObject().let { obj ->
-                        obj.putOpt("index", index)
-                        obj.putOpt("value", "$any")
-                        obj.putOpt("type", "${any?.javaClass?.name}")
-                    })
+                    put(
+                        JSONObject()
+                            .putOpt("index", index)
+                            .putOpt("value", "$any")
+                            .putOpt("type", "${any?.javaClass?.name}")
+                    )
                 }
             })
-            json.putOpt("throwable", JSONObject().let { obj ->
-                obj.putOpt("value", "$throwable")
-                obj.putOpt("type", "${throwable?.javaClass?.name}")
-            })
-            json.putOpt("result", JSONObject().let { obj ->
-                obj.putOpt("value", "$result")
-                obj.putOpt("type", "${result?.javaClass?.name}")
-            })
+            json.putOpt(
+                "throwable", JSONObject()
+                    .putOpt("value", "$throwable")
+                    .putOpt("type", "${throwable?.javaClass?.name}")
+            )
+            json.putOpt(
+                "result", JSONObject()
+                    .putOpt("value", "$result")
+                    .putOpt("type", "${result?.javaClass?.name}")
+            )
         }.toString()
     }
 }

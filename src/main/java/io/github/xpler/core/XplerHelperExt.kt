@@ -30,7 +30,7 @@ fun LoadParam.hookClass(
 fun LoadParam.hookClass(
     clazz: Class<*>,
 ): XplerHelper {
-    return XplerHelper.hookClass(clazz.name, classLoader)
+    return XplerHelper.hookClass(clazz)
 }
 
 fun LoadParam.findClass(

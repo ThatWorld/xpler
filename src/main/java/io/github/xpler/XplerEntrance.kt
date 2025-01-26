@@ -48,7 +48,7 @@ abstract class XplerEntrance : IXposedHookLoadPackage, IXposedHookZygoteInit {
 
     // module status hook!!
     private fun initModule(param: LoadParam) {
-        param.hookClass(XplerState::class.java)
+        param.hookClass(XplerState::class.java.name)
             .method("isEnabled") {
                 onAfter {
                     setResult(true)
